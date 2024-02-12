@@ -103,7 +103,7 @@ app.post('/api/connexion', function (req, res){
 });
 
 app.get('/logout', (req, res) => {
-    res.clearCookie("access-token");
+    res.clearCookie("access_token");
     res.redirect(process.env.FRONTEND_URL)
 });
 
