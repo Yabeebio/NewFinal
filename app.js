@@ -108,7 +108,7 @@ app.get('/logout', (req, res) => {
 });
 
 app.get('/getJwt', validateToken, (req, res) => {
-    res.json(jwtDecode(req.cookies['access-token']));
+    res.json(jwtDecode(req.cookies['access_token']));
 });
 
 var server = app.listen(5000, function () {
