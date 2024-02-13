@@ -97,7 +97,10 @@ app.post('/api/connexion', function (req, res){
     });
     res.redirect(process.env.FRONTEND_URL)
     })
-    .catch(error => { console.log(error); });
+    .catch(error => {
+        console.error(error);
+        res.status(500).send("Internal Server Error");
+    });
 
 });
 
