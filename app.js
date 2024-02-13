@@ -52,7 +52,6 @@ const upload = multer({ storage });
 
 
 
-
 // USER SETUP
 const User = require('./models/User');
 const { jwtDecode } = require('jwt-decode');
