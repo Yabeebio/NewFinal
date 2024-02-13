@@ -17,7 +17,7 @@ app.set('view engine', 'ejs');
 
 // Accès aux données du host:5000
 const cors = require('cors');
-app.use(cors({ credentials: true, origin: process.env.FRONTEND_URL }));
+app.use(cors({ credentials: true, origin: "http://localhost:3000"/* process.env.FRONTEND_URL */ }));
 
 // Method put & delete pour express (pas reconnu nativement)
 const methodOverride = require('method-override');
@@ -112,7 +112,7 @@ app.post('/api/connexion', function (req, res) {
 
 // GET USER
 
-app.get("/user/:id", (req, res) => {
+app.get("/profile/:id", (req, res) => {
     User.findOne({
         _id: req.params.id
     })
