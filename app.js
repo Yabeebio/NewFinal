@@ -94,7 +94,8 @@ app.post('/api/connexion', function (req, res){
     res.cookie("access_token", accessToken, {
         maxAge: 1000 * 60 * 60 * 24 * 30, // 30 jours en ms
         httpOnly: true,
-        secure: true
+        secure: true,
+        sameSite: 'None'
     });
     res.redirect(process.env.FRONTEND_URL)
     })
