@@ -80,13 +80,15 @@ app.post('/api/inscription', function (req, res){
 
 app.post('/api/connexion', function (req, res){
     User.findOne({
-        username: req.body.username
+        email: req.body.email
     })
     .then(user => {
         if (!user){
+            console.log("No user found");
             return res.status(404).send("No user found");
         }
         if (!bcrypt.compareSync(req.body.password, user.password)){
+            console.log("Invalid password");
             return res.status(404).send("Invalid password");
         }
 
@@ -95,8 +97,10 @@ app.post('/api/connexion', function (req, res){
         maxAge: 1000 * 60 * 60 * 24 * 30, // 30 jours en ms
         httpOnly: true,
         secure: true,
-        sameSite: 'None'
+        sameSite: 'None',
+        path: '/'
     });
+    console.log("Successfully logged in");
     res.redirect(process.env.FRONTEND_URL)
     })
     .catch(error => {
@@ -112,6 +116,7 @@ app.get('/logout', (req, res) => {
 });
 
 app.get('/getJwt', validateToken, (req, res) => {
+    console.log('Requête vers /getJwt reçue');
     res.json(jwtDecode(req.cookies['access_token']));
 });
 
