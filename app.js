@@ -17,7 +17,7 @@ app.set('view engine', 'ejs');
 
 // Accès aux données du host:5000
 const cors = require('cors');
-app.use(cors({ credentials : true, origin: process.env.FRONTEND_URL }));
+app.use(cors({ credentials: true, origin: process.env.FRONTEND_URL }));
 
 // Method put & delete pour express (pas reconnu nativement)
 const methodOverride = require('method-override');
@@ -42,7 +42,7 @@ const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'uploads/') // DESTINATION DES IMAGES
     },
-    filename : (req, file, cb) => {
+    filename: (req, file, cb) => {
         cb(null, file.originalname); // CHANGER LE NOM DES IMAGES
     }
 });
@@ -58,7 +58,7 @@ const { jwtDecode } = require('jwt-decode');
 
 // INSCRIPTION
 
-app.post('/api/inscription', function (req, res){
+app.post('/api/inscription', function (req, res) {
     const Data = new User({
         nom: req.body.nom,
         prenom: req.body.prenom,
@@ -73,42 +73,92 @@ app.post('/api/inscription', function (req, res){
             console.log("User saved");
             res.redirect(process.env.FRONTEND_URL + '/connexion');
         })
-        .catch(err => { console.log(err);});
+        .catch(err => { console.log(err); });
 });
 
 // CONNEXION
 
-app.post('/api/connexion', function (req, res){
+app.post('/api/connexion', function (req, res) {
     User.findOne({
         email: req.body.email
     })
-    .then(user => {
-        if (!user){
-            console.log("No user found");
-            return res.status(404).send("No user found");
-        }
-        if (!bcrypt.compareSync(req.body.password, user.password)){
-            console.log("Invalid password");
-            return res.status(404).send("Invalid password");
-        }
+        .then(user => {
+            if (!user) {
+                console.log("No user found");
+                return res.status(404).send("No user found");
+            }
+            if (!bcrypt.compareSync(req.body.password, user.password)) {
+                console.log("Invalid password");
+                return res.status(404).send("Invalid password");
+            }
 
-    const accessToken = createTokens(user)
-    res.cookie("access_token", accessToken, {
-        maxAge: 1000 * 60 * 60 * 24 * 30, // 30 jours en ms
-        httpOnly: true,
-        secure: true,
-        sameSite: 'None',
-        path: '/'
-    });
-    console.log("Successfully logged in");
-    res.redirect(process.env.FRONTEND_URL)
-    })
-    .catch(error => {
-        console.error(error);
-        res.status(500).send("Internal Server Error");
-    });
+            const accessToken = createTokens(user)
+            res.cookie("access_token", accessToken, {
+                maxAge: 1000 * 60 * 60 * 24 * 30, // 30 jours en ms
+                httpOnly: true,
+                secure: true,
+                sameSite: 'None',
+                path: '/'
+            });
+            console.log("Successfully logged in");
+            res.redirect(process.env.FRONTEND_URL)
+        })
+        .catch(error => {
+            console.error(error);
+            res.status(500).send("Internal Server Error");
+        });
 
 });
+
+// GET USER
+
+app.get("/user/:id", (req, res) => {
+    User.findOne({
+        _id: req.params.id
+    })
+    .then((data) =>{
+        res.json(data);
+    })
+    .catch((error) => {
+        res.status(404).json({error : error});
+    })
+});
+
+// UPDATE
+
+app.put('/edituser/:id', (req, res) => {
+    const Data = {
+        nom: req.body.nom,
+        prenom: req.body.prenom,
+        email: req.body.email,
+        password: req.body.password,
+        tel: req.body.tel
+    }
+
+    User.updateOne({
+        _id: req.params.id
+    }, { $set: Data })
+        .then(() => {
+            res.redirect(process.env.FRONTEND_URL + '/profile')
+        })
+        .catch((error) => {
+            console.log(error);
+        })
+})
+
+// DELETE
+
+app.delete('/deleteuser/:id', (req, res) => {
+    User.findOneAndDelete({ _id: req.params.id })
+        .then(() => {
+            console.log("User deleted successfully");
+            res.redirect(process.env.FRONTEND_URL)
+        })
+        .catch((error) => {
+            console.log(error);
+        })
+})
+
 
 app.get('/logout', (req, res) => {
     res.clearCookie("access_token");
