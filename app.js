@@ -154,7 +154,8 @@ app.delete('/deleteuser/:id', (req, res) => {
     User.findOneAndDelete({ _id: req.params.id })
         .then(() => {
             console.log("User deleted successfully");
-            res.redirect(process.env.FRONTEND_URL)
+            /* res.redirect(process.env.FRONTEND_URL) */
+            res.redirect("https://lime-easy-beaver.cyclic.app/logout")
         })
         .catch((error) => {
             console.log(error);
