@@ -126,7 +126,7 @@ app.get("/profile/:id", (req, res) => {
 
 // UPDATE
 
-app.put('/edituser/:id', (req, res) => {
+app.put('/profile/:id', (req, res) => {
     const Data = {
         nom: req.body.nom,
         prenom: req.body.prenom,
