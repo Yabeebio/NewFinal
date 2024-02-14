@@ -139,8 +139,8 @@ app.put('/profile/:id', (req, res) => {
         _id: req.params.id
     }, { $set: Data })
         .then(() => {
-            res.json({ success: true, message: 'Profile updated successfully' });
-            /* res.redirect(process.env.FRONTEND_URL + '/profile/:id') */
+            /* res.json({ success: true, message: 'Profile updated successfully' }); */
+            res.redirect(process.env.FRONTEND_URL + '/profile/:id')
         })
         .catch((error) => {
             console.log(error);
