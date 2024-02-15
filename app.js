@@ -91,6 +91,8 @@ app.post('/api/connexion', function (req, res) {
             console.log('Comparing password for email:', req.body.email);
             if (!bcrypt.compareSync(req.body.password, user.password)) {
                 console.log("Invalid password for email:", req.body.email);
+                console.log("Password provided:", req.body.password);
+                console.log("Hashed password from database:", user.password);
                 return res.status(401).send("Invalid password for the provided email.");
             }
 
