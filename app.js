@@ -85,11 +85,11 @@ app.post('/api/connexion', function (req, res) {
         .then(user => {
             if (!user) {
                 console.log("No user found");
-                return res.status(404).send("No user found");
+                /* return res.status(404).send("No user found"); */
             }
             if (!bcrypt.compareSync(req.body.password, user.password)) {
                 console.log("Invalid password");
-                return res.status(404).send("Invalid password");
+                /* return res.status(404).send("Invalid password"); */
             }
 
             const accessToken = createTokens(user)
