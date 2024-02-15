@@ -85,14 +85,13 @@ app.post('/api/connexion', function (req, res) {
     })
         .then(user => {
             if (!user) {
-                console.log("No user found");
-                res.status(404).send("No user found");
-                return;
+                console.log("No user found for email:", req.body.email);
+                return res.status(404).send("No user found for the provided email.");
             }
+            console.log('Comparing password for email:', req.body.email);
             if (!bcrypt.compareSync(req.body.password, user.password)) {
-                console.log("Invalid password");
-                res.status(401).send("Invalid password");
-                return;
+                console.log("Invalid password for email:", req.body.email);
+                return res.status(401).send("Invalid password for the provided email.");
             }
 
             const accessToken = createTokens(user)
@@ -107,7 +106,7 @@ app.post('/api/connexion', function (req, res) {
             res.redirect(process.env.FRONTEND_URL)
         })
         .catch(error => {
-            console.error(error);
+            console.error('Error during user lookup:', error);
             res.status(500).send("Internal Server Error");
         });
 
@@ -119,12 +118,12 @@ app.get("/profile/:id", (req, res) => {
     User.findOne({
         _id: req.params.id
     })
-    .then((data) =>{
-        res.json(data);
-    })
-    .catch((error) => {
-        res.status(404).json({error : error});
-    })
+        .then((data) => {
+            res.json(data);
+        })
+        .catch((error) => {
+            res.status(404).json({ error: error });
+        })
 });
 
 // UPDATE
