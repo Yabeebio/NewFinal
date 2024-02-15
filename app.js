@@ -79,21 +79,17 @@ app.post('/api/inscription', function (req, res) {
 // CONNEXION
 
 app.post('/api/connexion', function (req, res) {
-    console.log("Received POST request to /api/connexion");
     User.findOne({
         email: req.body.email
     })
         .then(user => {
             if (!user) {
                 console.log("No user found for email:", req.body.email);
-                return res.status(404).send("No user found for the provided email.");
+                return res.status(404).json({ error: "No user found for the provided email." });
             }
-            console.log('Comparing password for email:', req.body.email);
             if (!bcrypt.compareSync(req.body.password, user.password)) {
                 console.log("Invalid password for email:", req.body.email);
-                console.log("Password provided:", req.body.password);
-                console.log("Hashed password from database:", user.password);
-                return res.status(401).send("Invalid password for the provided email.");
+                return res.status(401).json({ error: "Invalid password for the provided email." });
             }
 
             const accessToken = createTokens(user)
@@ -108,7 +104,6 @@ app.post('/api/connexion', function (req, res) {
             res.redirect(process.env.FRONTEND_URL)
         })
         .catch(error => {
-            console.error('Error during user lookup:', error);
             res.status(500).send("Internal Server Error");
         });
 
