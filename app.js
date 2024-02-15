@@ -85,11 +85,11 @@ app.post('/api/connexion', function (req, res) {
         .then(user => {
             if (!user) {
                 console.log("No user found for email:", req.body.email);
-                return res.status(404).json({ error: "No user found for the provided email." });
+                return res.status(404).send("No user found for the provided email.");
             }
             if (!bcrypt.compareSync(req.body.password, user.password)) {
                 console.log("Invalid password for email:", req.body.email);
-                return res.status(401).json({ error: "Invalid password for the provided email." });
+                return res.status(401).send("Invalid password for the provided email.");
             }
 
             const accessToken = createTokens(user)
