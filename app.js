@@ -79,6 +79,7 @@ app.post('/api/inscription', function (req, res) {
 // CONNEXION
 
 app.post('/api/connexion', function (req, res) {
+    console.log("Received POST request to /api/connexion");
     User.findOne({
         email: req.body.email
     })
