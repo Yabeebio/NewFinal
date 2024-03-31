@@ -1,63 +1,84 @@
-const express = require('express');
-const app = express();
-const bodyParser = require('body-parser');
-const multer = require('multer');
-const AWS = require('aws-sdk');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const methodOverride = require('method-override');
-const bcrypt = require('bcrypt');
-const cookieParser = require('cookie-parser');
-const { createTokens, validateToken } = require('./JWT');
-const User = require('./models/User');
-const Vente = require('./models/Vente');
-const Support = require('./models/Support');
-const { jwtDecode } = require('jwt-decode');
+var express = require('express');
+var app = express();
 
-// Configuration AWS
-const s3 = new AWS.S3({
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    sessionToken: process.env.AWS_SESSION_TOKEN,
-    region: process.env.AWS_REGION
-});
+var bodyParser = require('body-parser');
+app.use(bodyParser.urlencoded({ extended: false }));
+require('dotenv').config();
 
 // Connexion MongoDB
-require('dotenv').config();
+var mongoose = require('mongoose');
 const url = process.env.DATABASE_URL;
+
 mongoose.connect(url)
-    .then(() => console.log("MongoDB connected"))
+    .then(console.log("Mongodb connected"))
     .catch(err => console.log(err));
 
 app.set('view engine', 'ejs');
 
 // Accès aux données du host:5000
-app.use(cors({ credentials: true, origin: process.env.FRONTEND_URL }));
+const cors = require('cors');
+
+// CORS configuration
+const corsOptions = {
+    origin: 'https://frontend-final-five.vercel.app',
+    methods: 'GET, POST, PUT, PATCH, DELETE',
+    allowedHeaders: 'Content-Type, Authorization',
+};
+
+app.use(cors(corsOptions));
 
 // Method put & delete pour express (pas reconnu nativement)
+const methodOverride = require('method-override');
 app.use(methodOverride('_method'));
 
-// Middleware pour parser les données du corps des requêtes
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+// Bcrypt : Pour hasher les mots de passe
+const bcrypt = require('bcrypt');
 
-// Middleware pour parser les cookies
+// Cookie parser
+const cookieParser = require('cookie-parser');
 app.use(cookieParser());
 
+// Import JWT (Token)
+const { createTokens, validateToken } = require('./JWT');
+
+// Multer
+const multer = require('multer');
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, path.join(__dirname, 'uploads'));
+        /* cb(null, 'uploads/') */ // DESTINATION DES IMAGES
+    },
+    filename: (req, file, cb) => {
+        cb(null, file.originalname); // CHANGER LE NOM DES IMAGES
+    }
+});
+
+const upload = multer({ storage: storage });
+
+
+// MODELE SETUP
+const User = require('./models/User');
+const Vente = require('./models/Vente');
+const Support = require('./models/Support');
+
+const { jwtDecode } = require('jwt-decode');
+
 // INSCRIPTION
+
 app.post('/api/inscription', function (req, res) {
-    const userData = {
+    const Data = new User({
         nom: req.body.nom,
         prenom: req.body.prenom,
         email: req.body.email,
         password: bcrypt.hashSync(req.body.password, 10),
         tel: req.body.tel,
         admin: req.body.admin
-    };
+    })
 
-    const newUser = new User(userData);
-
-    newUser.save()
+    Data.save()
         .then(() => {
             console.log("User saved");
             res.redirect(process.env.FRONTEND_URL + '/connexion');
@@ -66,6 +87,7 @@ app.post('/api/inscription', function (req, res) {
 });
 
 // CONNEXION
+
 app.post('/api/connexion', function (req, res) {
     User.findOne({
         email: req.body.email
@@ -80,7 +102,7 @@ app.post('/api/connexion', function (req, res) {
                 return res.status(401).send("Invalid password for the provided email.");
             }
 
-            const accessToken = createTokens(user);
+            const accessToken = createTokens(user)
             res.cookie("access_token", accessToken, {
                 maxAge: 1000 * 60 * 60 * 24 * 30, // 30 jours en ms
                 httpOnly: true,
@@ -89,14 +111,16 @@ app.post('/api/connexion', function (req, res) {
                 path: '/'
             });
             console.log("Successfully logged in");
-            res.redirect(process.env.FRONTEND_URL);
+            res.redirect(process.env.FRONTEND_URL)
         })
         .catch(error => {
             res.status(500).send("Internal Server Error");
         });
+
 });
 
 // GET USER
+
 app.get("/profile/:id", (req, res) => {
     User.findOne({
         _id: req.params.id
@@ -106,78 +130,91 @@ app.get("/profile/:id", (req, res) => {
         })
         .catch((error) => {
             res.status(404).json({ error: error });
-        });
+        })
 });
 
 // UPDATE
+
 app.put('/profile/:id', (req, res) => {
-    const userData = {
+    const Data = {
         nom: req.body.nom,
         prenom: req.body.prenom,
         email: req.body.email,
         password: req.body.password,
         tel: req.body.tel
-    };
+    }
 
     User.updateOne({
         _id: req.params.id
-    }, { $set: userData })
+    }, { $set: Data })
         .then(() => {
-            res.redirect(process.env.FRONTEND_URL + '/profile/' + req.params.id);
+            /* res.json({ success: true, message: 'Profile updated successfully' }); */
+            res.redirect(process.env.FRONTEND_URL + '/profile/' + req.params.id)
         })
         .catch((error) => {
             console.log(error);
             res.status(500).json({ success: false, message: 'Internal Server Error' });
-        });
-});
+        })
+})
 
 // DELETE PROFILE
+
 app.delete('/deleteuser/:id', (req, res) => {
     User.findOneAndDelete({ _id: req.params.id })
         .then(() => {
             console.log("User deleted successfully");
-            res.redirect("https://lime-easy-beaver.cyclic.app/logout");
+            /* res.redirect(process.env.FRONTEND_URL) */
+            res.redirect("https://lime-easy-beaver.cyclic.app/logout")
         })
         .catch((error) => {
             console.log(error);
-        });
-});
+        })
+})
 
-// Ajout des images dans S3
-app.post('/addSales', upload.array('images', 50), async function (req, res) {
+// ADD FOR SALES
+
+app.post('/addSales', upload.array('images', 50), function (req, res) {
     if (!req.files || req.files.length === 0) {
         return res.status(400).json({ message: "No files uploaded" });
     }
 
-    const images = req.files.map(file => ({
-        Key: 'some_files/' + Date.now().toString() + '-' + file.originalname,
-        Body: file.buffer
-    }));
+    const images = req.files.map(file => file.originalname);
 
-    try {
-        const uploadPromises = images.map(image => s3.upload(image).promise());
-        await Promise.all(uploadPromises);
-        console.log("Images uploaded successfully");
-        res.json({ redirect: '/buy' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Internal Server Error" });
-    }
+    const Data = new Vente({
+        vehicule: req.body.vehicule,
+        immat: req.body.immat,
+        serie: req.body.serie,
+        kilometrage: req.body.kilometrage,
+        annee: req.body.annee,
+        energie: req.body.energie,
+        puissance: req.body.puissance,
+        ville: req.body.ville,
+        code: req.body.code,
+        description: req.body.description,
+        prix: req.body.prix,
+        images: images
+    });
+
+    Data.save()
+        .then(() => {
+            console.log("Car saved successfully");
+            res.json({ redirect: '/buy' });
+        })
+        .catch(error => {
+            console.error(error);
+            res.status(500).json({ error: "Internal Server Error" })
+        })
 });
 
-// GET ALL SALES
 app.get('/allsales', function (req, res) {
     Vente.find()
         .then((data) => {
             res.json(data);
         })
-        .catch((error) => {
-            console.error(error);
-            res.status(500).json({ error: 'Internal Server Error' });
-        });
 });
 
 // HISTORIQUE DES ANNONCES DE L'UTILISATEUR
+
 app.get('/api/annonces', validateToken, (req, res) => {
     const userId = req.user.id;
     Vente.find({ userId: userId })
@@ -190,7 +227,9 @@ app.get('/api/annonces', validateToken, (req, res) => {
         });
 });
 
+
 // RECUPERER UNE SEULE ANNONCE SELON L'ID
+
 app.get('/sale/:id', function (req, res) {
     Vente.findOne({
         _id: req.params.id
@@ -208,6 +247,7 @@ app.get('/sale/:id', function (req, res) {
 });
 
 // RECHERCHE VEHICULE
+
 app.get('/api/search', async (req, res) => {
     const query = req.query.query;
     try {
@@ -220,43 +260,37 @@ app.get('/api/search', async (req, res) => {
 });
 
 // ADD MESSAGE
+
 app.post('/api/contacter', function (req, res) {
-    const supportData = {
+    const Data = new Support({
         email: req.body.email,
         message: req.body.message
-    };
+    })
 
-    const newSupport = new Support(supportData);
-
-    newSupport.save()
+    Data.save()
         .then(() => {
-            console.log('Message sended');
-            res.redirect("https://frontend-final-five.vercel.app/");
+            console.log('Message sended')
+            res.redirect("https://frontend-final-five.vercel.app/")
         })
         .catch((error) => {
             console.log(error);
-            res.status(500).json({ error: "Internal Server Error" });
-        });
+        })
 });
 
-// GET ALL MESSAGES
 app.get('/allmessages', function (req, res) {
     Support.find()
         .then((data) => {
             res.json(data);
         })
-        .catch((error) => {
-            console.error(error);
-            res.status(500).json({ error: 'Internal Server Error' });
-        });
 });
 
 // DELETE MESSAGE
+
 app.delete('/deletemessage/:id', (req, res) => {
     Support.findOneAndDelete({ _id: req.params.id })
         .then(() => {
             console.log("Message deleted successfully");
-            res.redirect("https://frontend-final-five.vercel.app/");
+            res.redirect("https://frontend-final-five.vercel.app/")
         })
         .catch((error) => {
             console.log(error);
@@ -264,19 +298,16 @@ app.delete('/deletemessage/:id', (req, res) => {
         });
 });
 
-// GET ALL USERS
+
 app.get('/allusers', function (req, res) {
     User.find()
         .then((data) => {
             res.json(data);
         })
-        .catch((error) => {
-            console.error(error);
-            res.status(500).json({ error: 'Internal Server Error' });
-        });
 });
 
 // DELETE USER BY ADMIN
+
 app.delete('/deletethisuser/:id', (req, res) => {
     User.findOneAndDelete({ _id: req.params.id })
         .then(() => {
@@ -289,19 +320,17 @@ app.delete('/deletethisuser/:id', (req, res) => {
         });
 });
 
-// LOGOUT
+
 app.get('/logout', (req, res) => {
     res.clearCookie("access_token");
-    res.redirect(process.env.FRONTEND_URL);
+    res.redirect(process.env.FRONTEND_URL)
 });
 
-// Get JWT
 app.get('/getJwt', validateToken, (req, res) => {
     console.log('Requête vers /getJwt reçue');
     res.json(jwtDecode(req.cookies['access_token']));
 });
 
-const port = process.env.PORT || 5000;
-const server = app.listen(port, function () {
-    console.log("Server listening on port " + port);
+var server = app.listen(5000, function () {
+    console.log("Server listening on port 5000");
 });
