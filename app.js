@@ -1,13 +1,6 @@
 var express = require('express');
 var app = express();
 
-/* app.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', 'https://frontend-final-five.vercel.app'); // Autoriser l'accès depuis n'importe quelle origine
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE'); // Autoriser les méthodes HTTP
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Autoriser certains en-têtes
-    next();
-}); */
-
 var bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: false }));
 require('dotenv').config();
@@ -26,7 +19,6 @@ app.set('view engine', 'ejs');
 const cors = require('cors');
 
 // CORS configuration
-
 const corsOptions = {
     origin: 'https://frontend-final-five.vercel.app',
     methods: 'GET, POST, PUT, PATCH, DELETE',
@@ -34,18 +26,15 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-/* app.use(cors({ credentials: true, origin: process.env.FRONTEND_URL })); */
-
 
 // Method put & delete pour express (pas reconnu nativement)
 const methodOverride = require('method-override');
 app.use(methodOverride('_method'));
 
-// Bcrypt : Pour hasher les mots de passes
+// Bcrypt : Pour hasher les mots de passe
 const bcrypt = require('bcrypt');
 
 // Cookie parser
-
 const cookieParser = require('cookie-parser');
 app.use(cookieParser());
 
@@ -54,11 +43,8 @@ const { createTokens, validateToken } = require('./JWT');
 
 // Multer
 const multer = require('multer');
-/* app.use(express.static('uploads')); */
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-const resizedFolderPath = 'uploads/resized/';
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -184,10 +170,6 @@ app.delete('/deleteuser/:id', (req, res) => {
         })
 })
 
-// POUR REDIMENSIONNER LES IMAGES RECUS
-
-const sharp = require('sharp');
-
 // ADD FOR SALES
 
 app.post('/addSales', upload.array('images', 50), function (req, res) {
@@ -196,19 +178,6 @@ app.post('/addSales', upload.array('images', 50), function (req, res) {
     }
 
     const images = req.files.map(file => file.originalname);
-
-    req.files.forEach(file => {
-        sharp(file.path)
-            .resize({ width: 800, height: 600 }) // Spécifiez les dimensions souhaitées
-            .toFile(resizedFolderPath + 'resized_' + file.originalname, (err, info) => {
-                if (err) {
-                    console.error("Error resizing image:", err);
-                } else {
-                    console.log("Resized image saved:", info);
-                    fs.unlinkSync(file.path); // Supprime le fichier original après redimensionnement
-                }
-            });
-    });
 
     const Data = new Vente({
         vehicule: req.body.vehicule,
@@ -229,8 +198,6 @@ app.post('/addSales', upload.array('images', 50), function (req, res) {
         .then(() => {
             console.log("Car saved successfully");
             res.json({ redirect: '/buy' });
-            /* res.redirect('http://localhost:3000/buy'); */
-            /* res.status(200).json({result: 'Car saved successfully'}); */
         })
         .catch(error => {
             console.error(error);
@@ -302,7 +269,6 @@ app.post('/api/contacter', function (req, res) {
     Data.save()
         .then(() => {
             console.log('Message sended')
-            /* res.redirect("http://localhost:3000/") */
             res.redirect("https://frontend-final-five.vercel.app/")
         })
         .catch((error) => {
@@ -323,7 +289,6 @@ app.delete('/deletemessage/:id', (req, res) => {
     Support.findOneAndDelete({ _id: req.params.id })
         .then(() => {
             console.log("Message deleted successfully");
-            /* res.redirect("http://localhost:3000/message"); */
             res.redirect("https://frontend-final-five.vercel.app/")
         })
         .catch((error) => {
@@ -346,7 +311,6 @@ app.delete('/deletethisuser/:id', (req, res) => {
     User.findOneAndDelete({ _id: req.params.id })
         .then(() => {
             console.log("This user has been deleted successfully");
-            /* res.redirect("http://localhost:3000/panelcontrol"); */
             res.redirect("https://frontend-final-five.vercel.app/panelcontrol");
         })
         .catch((error) => {
