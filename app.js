@@ -24,7 +24,7 @@ app.set('view engine', 'ejs');
 
 // Accès aux données du host:5000
 const cors = require('cors');
-app.use(cors({ credentials: true, origin: "http://localhost:3000" /* process.env.FRONTEND_URL */ }));
+app.use(cors({ credentials: true, origin: process.env.FRONTEND_URL }));
 
 // Method put & delete pour express (pas reconnu nativement)
 const methodOverride = require('method-override');
@@ -288,7 +288,8 @@ app.post('/api/contacter', function (req, res) {
     Data.save()
         .then(() => {
             console.log('Message sended')
-            res.redirect("http://localhost:3000/")
+            /* res.redirect("http://localhost:3000/") */
+            res.redirect("https://frontend-final-five.vercel.app/")
         })
         .catch((error) => {
             console.log(error);
@@ -308,7 +309,8 @@ app.delete('/deletemessage/:id', (req, res) => {
     Support.findOneAndDelete({ _id: req.params.id })
         .then(() => {
             console.log("Message deleted successfully");
-            res.redirect("http://localhost:3000/message");
+            /* res.redirect("http://localhost:3000/message"); */
+            res.redirect("https://frontend-final-five.vercel.app/")
         })
         .catch((error) => {
             console.log(error);
@@ -330,7 +332,8 @@ app.delete('/deletethisuser/:id', (req, res) => {
     User.findOneAndDelete({ _id: req.params.id })
         .then(() => {
             console.log("This user has been deleted successfully");
-            res.redirect("http://localhost:3000/panelcontrol");
+            /* res.redirect("http://localhost:3000/panelcontrol"); */
+            res.redirect("https://frontend-final-five.vercel.app/panelcontrol");
         })
         .catch((error) => {
             console.log(error);
