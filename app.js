@@ -198,6 +198,12 @@ app.post('/addSales', upload.array('images', 50), function (req, res) {
     Data.save()
         .then(() => {
             console.log("Car saved successfully");
+
+            // Ajouter les en-têtes CORS ici
+            res.header('Access-Control-Allow-Origin', 'https://frontend-final-five.vercel.app');
+            res.header('Access-Control-Allow-Credentials', true);
+
+            // Renvoyer la réponse JSON avec le code de redirection
             res.json({ redirect: '/buy' });
         })
         .catch(error => {
