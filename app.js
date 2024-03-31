@@ -1,16 +1,40 @@
-var express = require('express');
-var app = express();
+const express = require('express');
+const app = express();
+const bodyParser = require('body-parser');
+const multer = require('multer');
+const multerS3 = require('multer-s3');
+const AWS = require('aws-sdk');
 
-var bodyParser = require('body-parser');
-app.use(bodyParser.urlencoded({ extended: false }));
-require('dotenv').config();
+// Configuration AWS
+const s3 = new AWS.S3({
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    sessionToken: process.env.AWS_SESSION_TOKEN,
+    region: process.env.AWS_REGION
+});
+
+// Configuration du middleware Multer pour le stockage S3
+const upload = multer({
+    storage: multerS3({
+        s3: s3,
+        bucket: 'cyclic-lime-easy-beaver-eu-west-1', // Remplacez par le nom de votre bucket S3
+        acl: 'public-read', // Accès public aux fichiers
+        metadata: function (req, file, cb) {
+            cb(null, { fieldName: file.fieldname });
+        },
+        key: function (req, file, cb) {
+            cb(null, Date.now().toString() + '-' + file.originalname);
+        }
+    })
+});
 
 // Connexion MongoDB
-var mongoose = require('mongoose');
+const mongoose = require('mongoose');
+require('dotenv').config();
 const url = process.env.DATABASE_URL;
 
 mongoose.connect(url)
-    .then(console.log("Mongodb connected"))
+    .then(() => console.log("MongoDB connected"))
     .catch(err => console.log(err));
 
 app.set('view engine', 'ejs');
@@ -33,23 +57,6 @@ app.use(cookieParser());
 // Import JWT (Token)
 const { createTokens, validateToken } = require('./JWT');
 
-// Multer
-const multer = require('multer');
-const path = require('path');
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/');
-    },
-    filename: (req, file, cb) => {
-        cb(null, file.originalname);
-    }
-});
-
-const upload = multer({ storage: storage });
-
-
 // MODELE SETUP
 const User = require('./models/User');
 const Vente = require('./models/Vente');
@@ -58,7 +65,6 @@ const Support = require('./models/Support');
 const { jwtDecode } = require('jwt-decode');
 
 // INSCRIPTION
-
 app.post('/api/inscription', function (req, res) {
     const Data = new User({
         nom: req.body.nom,
@@ -78,7 +84,6 @@ app.post('/api/inscription', function (req, res) {
 });
 
 // CONNEXION
-
 app.post('/api/connexion', function (req, res) {
     User.findOne({
         email: req.body.email
@@ -107,11 +112,9 @@ app.post('/api/connexion', function (req, res) {
         .catch(error => {
             res.status(500).send("Internal Server Error");
         });
-
 });
 
 // GET USER
-
 app.get("/profile/:id", (req, res) => {
     User.findOne({
         _id: req.params.id
@@ -125,7 +128,6 @@ app.get("/profile/:id", (req, res) => {
 });
 
 // UPDATE
-
 app.put('/profile/:id', (req, res) => {
     const Data = {
         nom: req.body.nom,
@@ -146,24 +148,21 @@ app.put('/profile/:id', (req, res) => {
             console.log(error);
             res.status(500).json({ success: false, message: 'Internal Server Error' });
         })
-})
+});
 
 // DELETE PROFILE
-
 app.delete('/deleteuser/:id', (req, res) => {
     User.findOneAndDelete({ _id: req.params.id })
         .then(() => {
             console.log("User deleted successfully");
-            /* res.redirect(process.env.FRONTEND_URL) */
             res.redirect("https://lime-easy-beaver.cyclic.app/logout")
         })
         .catch((error) => {
             console.log(error);
         })
-})
+});
 
 // ADD FOR SALES
-
 app.post('/addSales', upload.array('images', 50), function (req, res) {
     if (!req.files || req.files.length === 0) {
         return res.status(400).json({ message: "No files uploaded" });
@@ -197,6 +196,7 @@ app.post('/addSales', upload.array('images', 50), function (req, res) {
         })
 });
 
+// GET ALL SALES
 app.get('/allsales', function (req, res) {
     Vente.find()
         .then((data) => {
@@ -205,7 +205,6 @@ app.get('/allsales', function (req, res) {
 });
 
 // HISTORIQUE DES ANNONCES DE L'UTILISATEUR
-
 app.get('/api/annonces', validateToken, (req, res) => {
     const userId = req.user.id;
     Vente.find({ userId: userId })
@@ -218,9 +217,7 @@ app.get('/api/annonces', validateToken, (req, res) => {
         });
 });
 
-
 // RECUPERER UNE SEULE ANNONCE SELON L'ID
-
 app.get('/sale/:id', function (req, res) {
     Vente.findOne({
         _id: req.params.id
@@ -238,7 +235,6 @@ app.get('/sale/:id', function (req, res) {
 });
 
 // RECHERCHE VEHICULE
-
 app.get('/api/search', async (req, res) => {
     const query = req.query.query;
     try {
@@ -251,7 +247,6 @@ app.get('/api/search', async (req, res) => {
 });
 
 // ADD MESSAGE
-
 app.post('/api/contacter', function (req, res) {
     const Data = new Support({
         email: req.body.email,
@@ -276,7 +271,6 @@ app.get('/allmessages', function (req, res) {
 });
 
 // DELETE MESSAGE
-
 app.delete('/deletemessage/:id', (req, res) => {
     Support.findOneAndDelete({ _id: req.params.id })
         .then(() => {
@@ -289,7 +283,6 @@ app.delete('/deletemessage/:id', (req, res) => {
         });
 });
 
-
 app.get('/allusers', function (req, res) {
     User.find()
         .then((data) => {
@@ -298,7 +291,6 @@ app.get('/allusers', function (req, res) {
 });
 
 // DELETE USER BY ADMIN
-
 app.delete('/deletethisuser/:id', (req, res) => {
     User.findOneAndDelete({ _id: req.params.id })
         .then(() => {
@@ -311,7 +303,6 @@ app.delete('/deletethisuser/:id', (req, res) => {
         });
 });
 
-
 app.get('/logout', (req, res) => {
     res.clearCookie("access_token");
     res.redirect(process.env.FRONTEND_URL)
@@ -322,6 +313,7 @@ app.get('/getJwt', validateToken, (req, res) => {
     res.json(jwtDecode(req.cookies['access_token']));
 });
 
-var server = app.listen(5000, function () {
-    console.log("Server listening on port 5000");
+const port = process.env.PORT || 5000;
+const server = app.listen(port, function () {
+    console.log("Server listening on port " + port);
 });
