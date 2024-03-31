@@ -181,16 +181,13 @@ app.post('/addSales', upload.array('images', 50), function (req, res) {
 
     const images = req.files.map(file => file.originalname);
 
-    // Configuration des paramètres de téléversement sur S3
-    const uploadParams = {
-        Bucket: 'cyclic-lime-easy-beaver-eu-west-1',
-        ACL: 'public-read', // Autoriser l'accès public aux fichiers téléversés
-    };
-
     // Promesses pour téléverser chaque fichier sur S3
     const uploadPromises = req.files.map(file => {
-        uploadParams.Key = file.originalname;
-        uploadParams.Body = file.buffer; // Utiliser le buffer du fichier pour le téléversement sur S3
+        const uploadParams = {
+            Bucket: 'cyclic-lime-easy-beaver-eu-west-1',
+            Key: file.originalname,
+            Body: file.buffer // Utiliser le buffer du fichier pour le téléversement sur S3
+        };
         return s3.upload(uploadParams).promise();
     });
 
