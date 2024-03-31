@@ -58,6 +58,8 @@ const multer = require('multer');
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+const resizedFolderPath = 'uploads/resized/';
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'uploads/') // DESTINATION DES IMAGES
@@ -198,7 +200,7 @@ app.post('/addSales', upload.array('images', 50), function (req, res) {
     req.files.forEach(file => {
         sharp(file.path)
             .resize({ width: 800, height: 600 }) // spécifiez les dimensions souhaitées
-            .toFile('uploads/resized_' + file.originalname, (err, info) => {
+            .toFile(resizedFolderPath + 'resized_' + file.originalname, (err, info) => {
                 if (err) {
                     console.error("Error resizing image:", err);
                 } else {
