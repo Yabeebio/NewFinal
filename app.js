@@ -183,7 +183,7 @@ app.post('/addSales', upload.array('images', 50), function (req, res) {
 
     // Configuration des paramètres de téléversement sur S3
     const uploadParams = {
-        Bucket: 'votre-bucket-s3',
+        Bucket: 'cyclic-lime-easy-beaver-eu-west-1',
         ACL: 'public-read', // Autoriser l'accès public aux fichiers téléversés
     };
 
