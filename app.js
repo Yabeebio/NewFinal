@@ -193,19 +193,40 @@ app.post('/addSales', upload.array('images', 50), function (req, res) {
 
     // Attendre que toutes les promesses de téléversement soient résolues
     Promise.all(uploadPromises)
-        .then(() => {
-            // Tous les fichiers ont été téléversés avec succès sur S3
-            console.log("Images uploaded successfully");
+    .then(() => {
+        // Tous les fichiers ont été téléversés avec succès sur S3
+        console.log("Images uploaded successfully");
 
-            // Maintenant, vous pouvez enregistrer les données de vente dans votre base de données
-
-            // Renvoyer une réponse JSON avec le code de redirection
-            res.json({ redirect: '/buy' });
-        })
-        .catch(error => {
-            console.error(error);
-            res.status(500).json({ error: "Internal Server Error" });
+        // Créer un nouvel objet Vente avec les données envoyées dans la requête
+        const nouvelleVente = new Vente({
+            vehicule: req.body.vehicule,
+            immat: req.body.immat,
+            serie: req.body.serie,
+            kilometrage: req.body.kilometrage,
+            annee: req.body.annee,
+            energie: req.body.energie,
+            puissance: req.body.puissance,
+            ville: req.body.ville,
+            code: req.body.code,
+            description: req.body.description,
+            prix: req.body.prix,
+            images: images // Utiliser les noms des fichiers des images téléversées
         });
+
+        // Enregistrer la nouvelle vente dans la base de données
+        return nouvelleVente.save();
+    })
+    .then(() => {
+        // La vente a été enregistrée avec succès dans la base de données
+        console.log("Vente enregistrée avec succès");
+
+        // Renvoyer une réponse JSON avec le code de redirection
+        res.json({ redirect: '/buy' });
+    })
+    .catch(error => {
+        console.error(error);
+        res.status(500).json({ error: "Internal Server Error" });
+    });
 });
 
 app.get('/allsales', function (req, res) {
