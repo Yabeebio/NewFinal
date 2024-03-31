@@ -342,7 +342,7 @@ app.delete('/deletethisuser/:id', (req, res) => {
 });
 
 
-/* app.get('/logout', (req, res) => {
+app.get('/logout', (req, res) => {
     res.clearCookie("access_token");
     res.redirect(process.env.FRONTEND_URL)
 });
@@ -350,7 +350,7 @@ app.delete('/deletethisuser/:id', (req, res) => {
 app.get('/getJwt', validateToken, (req, res) => {
     console.log('Requête vers /getJwt reçue');
     res.json(jwtDecode(req.cookies['access_token']));
-}); */
+});
 
 var server = app.listen(5000, function () {
     console.log("Server listening on port 5000");
