@@ -1,12 +1,12 @@
 var express = require('express');
 var app = express();
 
-app.use((req, res, next) => {
+/* app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', 'https://frontend-final-five.vercel.app'); // Autoriser l'accès depuis n'importe quelle origine
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE'); // Autoriser les méthodes HTTP
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Autoriser certains en-têtes
     next();
-});
+}); */
 
 var bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: false }));
