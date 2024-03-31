@@ -1,16 +1,16 @@
-var express = require('express');
-var app = express();
+const express = require('express');
+const app = express();
 
-var bodyParser = require('body-parser');
+const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: false }));
 require('dotenv').config();
 
 // Connexion MongoDB
-var mongoose = require('mongoose');
+const mongoose = require('mongoose');
 const url = process.env.DATABASE_URL;
 
 mongoose.connect(url)
-    .then(console.log("Mongodb connected"))
+    .then(() => console.log("Mongodb connected"))
     .catch(err => console.log(err));
 
 app.set('view engine', 'ejs');
@@ -46,18 +46,19 @@ const multer = require('multer');
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, path.join(__dirname, 'uploads'));
-        /* cb(null, 'uploads/') */ // DESTINATION DES IMAGES
-    },
-    filename: (req, file, cb) => {
-        cb(null, file.originalname); // CHANGER LE NOM DES IMAGES
-    }
+// Configuration AWS
+const AWS = require('aws-sdk');
+AWS.config.update({
+    region: process.env.AWS_REGION,
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    sessionToken: process.env.AWS_SESSION_TOKEN
 });
+const s3 = new AWS.S3();
+
+const storage = multer.memoryStorage();
 
 const upload = multer({ storage: storage });
-
 
 // MODELE SETUP
 const User = require('./models/User');
@@ -76,7 +77,7 @@ app.post('/api/inscription', function (req, res) {
         password: bcrypt.hashSync(req.body.password, 10),
         tel: req.body.tel,
         admin: req.body.admin
-    })
+    });
 
     Data.save()
         .then(() => {
@@ -142,7 +143,7 @@ app.put('/profile/:id', (req, res) => {
         email: req.body.email,
         password: req.body.password,
         tel: req.body.tel
-    }
+    };
 
     User.updateOne({
         _id: req.params.id
@@ -155,7 +156,7 @@ app.put('/profile/:id', (req, res) => {
             console.log(error);
             res.status(500).json({ success: false, message: 'Internal Server Error' });
         })
-})
+});
 
 // DELETE PROFILE
 
@@ -169,7 +170,7 @@ app.delete('/deleteuser/:id', (req, res) => {
         .catch((error) => {
             console.log(error);
         })
-})
+});
 
 // ADD FOR SALES
 
@@ -180,36 +181,34 @@ app.post('/addSales', upload.array('images', 50), function (req, res) {
 
     const images = req.files.map(file => file.originalname);
 
-    const Data = new Vente({
-        vehicule: req.body.vehicule,
-        immat: req.body.immat,
-        serie: req.body.serie,
-        kilometrage: req.body.kilometrage,
-        annee: req.body.annee,
-        energie: req.body.energie,
-        puissance: req.body.puissance,
-        ville: req.body.ville,
-        code: req.body.code,
-        description: req.body.description,
-        prix: req.body.prix,
-        images: images
+    // Configuration des paramètres de téléversement sur S3
+    const uploadParams = {
+        Bucket: 'votre-bucket-s3',
+        ACL: 'public-read', // Autoriser l'accès public aux fichiers téléversés
+    };
+
+    // Promesses pour téléverser chaque fichier sur S3
+    const uploadPromises = req.files.map(file => {
+        uploadParams.Key = file.originalname;
+        uploadParams.Body = file.buffer; // Utiliser le buffer du fichier pour le téléversement sur S3
+        return s3.upload(uploadParams).promise();
     });
 
-    Data.save()
+    // Attendre que toutes les promesses de téléversement soient résolues
+    Promise.all(uploadPromises)
         .then(() => {
-            console.log("Car saved successfully");
+            // Tous les fichiers ont été téléversés avec succès sur S3
+            console.log("Images uploaded successfully");
 
-            // Ajouter les en-têtes CORS ici
-            res.header('Access-Control-Allow-Origin', 'https://frontend-final-five.vercel.app');
-            res.header('Access-Control-Allow-Credentials', true);
+            // Maintenant, vous pouvez enregistrer les données de vente dans votre base de données
 
-            // Renvoyer la réponse JSON avec le code de redirection
+            // Renvoyer une réponse JSON avec le code de redirection
             res.json({ redirect: '/buy' });
         })
         .catch(error => {
             console.error(error);
-            res.status(500).json({ error: "Internal Server Error" })
-        })
+            res.status(500).json({ error: "Internal Server Error" });
+        });
 });
 
 app.get('/allsales', function (req, res) {
@@ -339,6 +338,6 @@ app.get('/getJwt', validateToken, (req, res) => {
     res.json(jwtDecode(req.cookies['access_token']));
 });
 
-var server = app.listen(5000, function () {
+const server = app.listen(5000, function () {
     console.log("Server listening on port 5000");
 });
