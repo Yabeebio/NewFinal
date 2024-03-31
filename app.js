@@ -2,7 +2,6 @@ const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
 const multer = require('multer');
-const multerS3 = require('multer-s3');
 const AWS = require('aws-sdk');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -21,21 +20,6 @@ const s3 = new AWS.S3({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
     sessionToken: process.env.AWS_SESSION_TOKEN,
     region: process.env.AWS_REGION
-});
-
-// Configuration du middleware Multer pour le stockage S3
-const upload = multer({
-    storage: multerS3({
-        s3: s3,
-        bucket: process.env.AWS_S3_BUCKET_NAME,
-        acl: 'public-read',
-        metadata: function (req, file, cb) {
-            cb(null, { fieldName: file.fieldname });
-        },
-        key: function (req, file, cb) {
-            cb(null, Date.now().toString() + '-' + file.originalname);
-        }
-    })
 });
 
 // Connexion MongoDB
@@ -159,40 +143,26 @@ app.delete('/deleteuser/:id', (req, res) => {
         });
 });
 
-// ADD FOR SALES
-app.post('/addSales', upload.array('images', 50), function (req, res) {
+// Ajout des images dans S3
+app.post('/addSales', upload.array('images', 50), async function (req, res) {
     if (!req.files || req.files.length === 0) {
         return res.status(400).json({ message: "No files uploaded" });
     }
 
-    const images = req.files.map(file => file.originalname);
+    const images = req.files.map(file => ({
+        Key: 'some_files/' + Date.now().toString() + '-' + file.originalname,
+        Body: file.buffer
+    }));
 
-    const venteData = {
-        vehicule: req.body.vehicule,
-        immat: req.body.immat,
-        serie: req.body.serie,
-        kilometrage: req.body.kilometrage,
-        annee: req.body.annee,
-        energie: req.body.energie,
-        puissance: req.body.puissance,
-        ville: req.body.ville,
-        code: req.body.code,
-        description: req.body.description,
-        prix: req.body.prix,
-        images: images
-    };
-
-    const newVente = new Vente(venteData);
-
-    newVente.save()
-        .then(() => {
-            console.log("Car saved successfully");
-            res.json({ redirect: '/buy' });
-        })
-        .catch(error => {
-            console.error(error);
-            res.status(500).json({ error: "Internal Server Error" });
-        });
+    try {
+        const uploadPromises = images.map(image => s3.upload(image).promise());
+        await Promise.all(uploadPromises);
+        console.log("Images uploaded successfully");
+        res.json({ redirect: '/buy' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
 });
 
 // GET ALL SALES
