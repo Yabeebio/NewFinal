@@ -191,7 +191,7 @@ const sharp = require('sharp');
 // ADD FOR SALES
 
 app.post('/addSales', upload.array('images', 50), function (req, res) {
-    if (!req.files || !req.files.length === 0) {
+    if (!req.files || req.files.length === 0) {
         return res.status(400).json({ message: "No files uploaded" });
     }
 
@@ -199,12 +199,13 @@ app.post('/addSales', upload.array('images', 50), function (req, res) {
 
     req.files.forEach(file => {
         sharp(file.path)
-            .resize({ width: 800, height: 600 }) // spécifiez les dimensions souhaitées
+            .resize({ width: 800, height: 600 }) // Spécifiez les dimensions souhaitées
             .toFile(resizedFolderPath + 'resized_' + file.originalname, (err, info) => {
                 if (err) {
                     console.error("Error resizing image:", err);
                 } else {
                     console.log("Resized image saved:", info);
+                    fs.unlinkSync(file.path); // Supprime le fichier original après redimensionnement
                 }
             });
     });
