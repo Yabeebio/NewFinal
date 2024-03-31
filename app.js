@@ -17,15 +17,7 @@ app.set('view engine', 'ejs');
 
 // Accès aux données du host:5000
 const cors = require('cors');
-
-// CORS configuration
-const corsOptions = {
-    origin: 'https://frontend-final-five.vercel.app',
-    methods: 'GET, POST, PUT, PATCH, DELETE',
-    allowedHeaders: 'Content-Type, Authorization',
-};
-
-app.use(cors(corsOptions));
+app.use(cors({ credentials: true, origin: process.env.FRONTEND_URL }));
 
 // Method put & delete pour express (pas reconnu nativement)
 const methodOverride = require('method-override');
