@@ -328,6 +328,8 @@ app.get('/logout', (req, res) => {
 
 app.get('/getJwt', validateToken, (req, res) => {
     console.log('Requête vers /getJwt reçue');
+    res.header('Access-Control-Allow-Origin', 'https://frontend-final-five.vercel.app');
+    res.header('Access-Control-Allow-Credentials', true); // Ajout de cet en-tête
     res.json(jwtDecode(req.cookies['access_token']));
 });
 
