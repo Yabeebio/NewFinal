@@ -313,7 +313,7 @@ app.post('/api/contacter', function (req, res) {
     Data.save()
         .then(() => {
             console.log('Message sended')
-            res.redirect("https://frontend-final-five.vercel.app/")
+            res.redirect(process.env.FRONTEND_URL)
         })
         .catch((error) => {
             console.log(error);
@@ -333,7 +333,7 @@ app.delete('/deletemessage/:id', (req, res) => {
     Support.findOneAndDelete({ _id: req.params.id })
         .then(() => {
             console.log("Message deleted successfully");
-            res.redirect("https://frontend-final-five.vercel.app/")
+            res.redirect(process.env.FRONTEND_URL)
         })
         .catch((error) => {
             console.log(error);
@@ -355,7 +355,7 @@ app.delete('/deletethisuser/:id', (req, res) => {
     User.findOneAndDelete({ _id: req.params.id })
         .then(() => {
             console.log("This user has been deleted successfully");
-            res.redirect("https://frontend-final-five.vercel.app/panelcontrol");
+            res.redirect(process.env.FRONTEND_URL + '/panelcontrol');
         })
         .catch((error) => {
             console.log(error);
@@ -371,7 +371,7 @@ app.get('/logout', (req, res) => {
 
 app.get('/getJwt', validateToken, (req, res) => {
     console.log('Requête vers /getJwt reçue');
-    res.header('Access-Control-Allow-Origin', 'https://frontend-final-five.vercel.app');
+    res.header('Access-Control-Allow-Origin', process.env.FRONTEND_URL);
     res.header('Access-Control-Allow-Credentials', true); // Ajout de cet en-tête
     res.json(jwtDecode(req.cookies['access_token']));
 });
