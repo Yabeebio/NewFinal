@@ -1,6 +1,13 @@
 var express = require('express');
 var app = express();
 
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', 'https://frontend-final-five.vercel.app'); // Autoriser l'accès depuis n'importe quelle origine
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE'); // Autoriser les méthodes HTTP
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Autoriser certains en-têtes
+    next();
+});
+
 var bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: false }));
 require('dotenv').config();
@@ -17,7 +24,7 @@ app.set('view engine', 'ejs');
 
 // Accès aux données du host:5000
 const cors = require('cors');
-app.use(cors({ credentials: true, origin: /* "http://localhost:3000" */process.env.FRONTEND_URL }));
+app.use(cors({ credentials: true, origin: "http://localhost:3000" /* process.env.FRONTEND_URL */ }));
 
 // Method put & delete pour express (pas reconnu nativement)
 const methodOverride = require('method-override');
@@ -36,7 +43,9 @@ const { createTokens, validateToken } = require('./JWT');
 
 // Multer
 const multer = require('multer');
-app.use(express.static('uploads'));
+/* app.use(express.static('uploads')); */
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -47,13 +56,14 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({ storage });
+const upload = multer({ storage: storage });
 
 
-
-
-// USER SETUP
+// MODELE SETUP
 const User = require('./models/User');
+const Vente = require('./models/Vente');
+const Support = require('./models/Support');
+
 const { jwtDecode } = require('jwt-decode');
 
 // INSCRIPTION
@@ -147,7 +157,7 @@ app.put('/profile/:id', (req, res) => {
         })
 })
 
-// DELETE
+// DELETE PROFILE
 
 app.delete('/deleteuser/:id', (req, res) => {
     User.findOneAndDelete({ _id: req.params.id })
@@ -161,8 +171,175 @@ app.delete('/deleteuser/:id', (req, res) => {
         })
 })
 
+// POUR REDIMENSIONNER LES IMAGES RECUS
 
-app.get('/logout', (req, res) => {
+const sharp = require('sharp');
+
+// ADD FOR SALES
+
+app.post('/addSales', upload.array('images', 50), function (req, res) {
+    if (!req.files || !req.files.length === 0) {
+        return res.status(400).json({ message: "No files uploaded" });
+    }
+
+    const images = req.files.map(file => file.originalname);
+
+    req.files.forEach(file => {
+        sharp(file.path)
+            .resize({ width: 800, height: 600 }) // spécifiez les dimensions souhaitées
+            .toFile('uploads/resized_' + file.originalname, (err, info) => {
+                if (err) {
+                    console.error("Error resizing image:", err);
+                } else {
+                    console.log("Resized image saved:", info);
+                }
+            });
+    });
+
+    const Data = new Vente({
+        vehicule: req.body.vehicule,
+        immat: req.body.immat,
+        serie: req.body.serie,
+        kilometrage: req.body.kilometrage,
+        annee: req.body.annee,
+        energie: req.body.energie,
+        puissance: req.body.puissance,
+        ville: req.body.ville,
+        code: req.body.code,
+        description: req.body.description,
+        prix: req.body.prix,
+        images: images
+    });
+
+    Data.save()
+        .then(() => {
+            console.log("Car saved successfully");
+            res.json({ redirect: '/buy' });
+            /* res.redirect('http://localhost:3000/buy'); */
+            /* res.status(200).json({result: 'Car saved successfully'}); */
+        })
+        .catch(error => {
+            console.error(error);
+            res.status(500).json({ error: "Internal Server Error" })
+        })
+});
+
+app.get('/allsales', function (req, res) {
+    Vente.find()
+        .then((data) => {
+            res.json(data);
+        })
+});
+
+// HISTORIQUE DES ANNONCES DE L'UTILISATEUR
+
+app.get('/api/annonces', validateToken, (req, res) => {
+    const userId = req.user.id;
+    Vente.find({ userId: userId })
+        .then((annonces) => {
+            res.json(annonces);
+        })
+        .catch((error) => {
+            console.error('Error retrieving user annonces:', error);
+            res.status(500).json({ error: 'Internal Server Error' });
+        });
+});
+
+
+// RECUPERER UNE SEULE ANNONCE SELON L'ID
+
+app.get('/sale/:id', function (req, res) {
+    Vente.findOne({
+        _id: req.params.id
+    })
+        .then((data) => {
+            if (!data) {
+                return res.status(404).json({ error: 'Sale not found' });
+            }
+            res.json(data);
+        })
+        .catch((error) => {
+            console.error('Error retrieving sale:', error);
+            res.status(500).json({ error: 'Internal Server Error' });
+        });
+});
+
+// RECHERCHE VEHICULE
+
+app.get('/api/search', async (req, res) => {
+    const query = req.query.query;
+    try {
+        const results = await Vente.find({ vehicule: { $regex: query, $options: 'i' } });
+        res.json(results);
+    } catch (error) {
+        console.error('Error searching for vehicles:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// ADD MESSAGE
+
+app.post('/api/contacter', function (req, res) {
+    const Data = new Support({
+        email: req.body.email,
+        message: req.body.message
+    })
+
+    Data.save()
+        .then(() => {
+            console.log('Message sended')
+            res.redirect("http://localhost:3000/")
+        })
+        .catch((error) => {
+            console.log(error);
+        })
+});
+
+app.get('/allmessages', function (req, res) {
+    Support.find()
+        .then((data) => {
+            res.json(data);
+        })
+});
+
+// DELETE MESSAGE
+
+app.delete('/deletemessage/:id', (req, res) => {
+    Support.findOneAndDelete({ _id: req.params.id })
+        .then(() => {
+            console.log("Message deleted successfully");
+            res.redirect("http://localhost:3000/message");
+        })
+        .catch((error) => {
+            console.log(error);
+            res.status(500).json({ error: "Internal Server Error" });
+        });
+});
+
+
+app.get('/allusers', function (req, res) {
+    User.find()
+        .then((data) => {
+            res.json(data);
+        })
+});
+
+// DELETE USER BY ADMIN
+
+app.delete('/deletethisuser/:id', (req, res) => {
+    User.findOneAndDelete({ _id: req.params.id })
+        .then(() => {
+            console.log("This user has been deleted successfully");
+            res.redirect("http://localhost:3000/panelcontrol");
+        })
+        .catch((error) => {
+            console.log(error);
+            res.status(500).json({ error: "Internal Server Error" });
+        });
+});
+
+
+/* app.get('/logout', (req, res) => {
     res.clearCookie("access_token");
     res.redirect(process.env.FRONTEND_URL)
 });
@@ -170,7 +347,7 @@ app.get('/logout', (req, res) => {
 app.get('/getJwt', validateToken, (req, res) => {
     console.log('Requête vers /getJwt reçue');
     res.json(jwtDecode(req.cookies['access_token']));
-});
+}); */
 
 var server = app.listen(5000, function () {
     console.log("Server listening on port 5000");
