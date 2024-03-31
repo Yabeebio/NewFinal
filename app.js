@@ -34,6 +34,10 @@ app.use(methodOverride('_method'));
 // Bcrypt : Pour hasher les mots de passe
 const bcrypt = require('bcrypt');
 
+// SHARP POUR REDIMENSIONNER LES IMAGES
+
+const sharp = require('sharp');
+
 // Cookie parser
 const cookieParser = require('cookie-parser');
 app.use(cookieParser());
@@ -181,52 +185,68 @@ app.post('/addSales', upload.array('images', 50), function (req, res) {
 
     const images = req.files.map(file => file.originalname);
 
-    // Promesses pour téléverser chaque fichier sur S3
+    // Promesses pour redimensionner et téléverser chaque fichier sur S3
     const uploadPromises = req.files.map(file => {
-        const uploadParams = {
-            Bucket: 'cyclic-lime-easy-beaver-eu-west-1',
-            Key: file.originalname,
-            Body: file.buffer // Utiliser le buffer du fichier pour le téléversement sur S3
-        };
-        return s3.upload(uploadParams).promise();
+        return new Promise((resolve, reject) => {
+            sharp(file.buffer)
+                .resize({ width: 800, height: 600 }) // Redimensionner l'image
+                .toBuffer() // Convertir l'image redimensionnée en tampon
+                .then(resizedBuffer => {
+                    const uploadParams = {
+                        Bucket: 'cyclic-lime-easy-beaver-eu-west-1',
+                        Key: 'resized_' + file.originalname,
+                        Body: resizedBuffer // Utiliser le buffer de l'image redimensionnée pour le téléversement sur S3
+                    };
+                    // Téléverser l'image redimensionnée sur S3
+                    return s3.upload(uploadParams).promise();
+                })
+                .then(() => {
+                    // L'image redimensionnée a été téléversée avec succès sur S3
+                    console.log("Resized image uploaded successfully");
+                    resolve();
+                })
+                .catch(error => {
+                    console.error("Error resizing/uploading image:", error);
+                    reject(error);
+                });
+        });
     });
 
     // Attendre que toutes les promesses de téléversement soient résolues
     Promise.all(uploadPromises)
-    .then(() => {
-        // Tous les fichiers ont été téléversés avec succès sur S3
-        console.log("Images uploaded successfully");
+        .then(() => {
+            // Toutes les images ont été téléversées avec succès sur S3
 
-        // Créer un nouvel objet Vente avec les données envoyées dans la requête
-        const nouvelleVente = new Vente({
-            vehicule: req.body.vehicule,
-            immat: req.body.immat,
-            serie: req.body.serie,
-            kilometrage: req.body.kilometrage,
-            annee: req.body.annee,
-            energie: req.body.energie,
-            puissance: req.body.puissance,
-            ville: req.body.ville,
-            code: req.body.code,
-            description: req.body.description,
-            prix: req.body.prix,
-            images: images // Utiliser les noms des fichiers des images téléversées
+            // Créer un nouvel objet Vente avec les données envoyées dans la requête
+            const nouvelleVente = new Vente({
+                vehicule: req.body.vehicule,
+                immat: req.body.immat,
+                serie: req.body.serie,
+                kilometrage: req.body.kilometrage,
+                annee: req.body.annee,
+                energie: req.body.energie,
+                puissance: req.body.puissance,
+                ville: req.body.ville,
+                code: req.body.code,
+                description: req.body.description,
+                prix: req.body.prix,
+                images: images // Utiliser les noms des fichiers des images téléversées
+            });
+
+            // Enregistrer la nouvelle vente dans la base de données
+            return nouvelleVente.save();
+        })
+        .then(() => {
+            // La vente a été enregistrée avec succès dans la base de données
+            console.log("Vente enregistrée avec succès");
+
+            // Renvoyer une réponse JSON avec le code de redirection
+            res.json({ redirect: '/buy' });
+        })
+        .catch(error => {
+            console.error(error);
+            res.status(500).json({ error: "Internal Server Error" });
         });
-
-        // Enregistrer la nouvelle vente dans la base de données
-        return nouvelleVente.save();
-    })
-    .then(() => {
-        // La vente a été enregistrée avec succès dans la base de données
-        console.log("Vente enregistrée avec succès");
-
-        // Renvoyer une réponse JSON avec le code de redirection
-        res.json({ redirect: '/buy' });
-    })
-    .catch(error => {
-        console.error(error);
-        res.status(500).json({ error: "Internal Server Error" });
-    });
 });
 
 app.get('/allsales', function (req, res) {
