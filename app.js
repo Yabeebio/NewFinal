@@ -189,55 +189,49 @@ app.delete('/deleteuser/:id', (req, res) => {
 
 const sharp = require('sharp');
 
-app.post('/addsales', upload.array('images', 50), function (req, res) {
-    if (!req.files || req.files.length === 0) {
+app.post('/addSales', upload.array('images', 50), function (req, res) {
+    if (!req.files || !req.files.length === 0) {
         return res.status(400).json({ message: "No files uploaded" });
     }
 
     const images = req.files.map(file => file.originalname);
 
-    const resizedImages = [];
-    const promises = req.files.map(file => {
-        return sharp(file.path)
-            .resize({ width: 200, height: 200 }) // Redimensionner l'image selon vos besoins
-            .toBuffer()
-            .then(data => {
-                resizedImages.push({ originalname: file.originalname, buffer: data });
+    req.files.forEach(file => {
+        sharp(file.path)
+            .resize({ width: 800, height: 600 }) // Spécifiez les dimensions souhaitées
+            .toFile('uploads/resized_' + file.originalname, (err, info) => {
+                if (err) {
+                    console.error("Error resizing image:", err);
+                } else {
+                    console.log("Resized image saved:", info);
+                }
             });
     });
 
-    Promise.all(promises)
-        .then(() => {
-            // Enregistrer les images redimensionnées
-            const Data = new Vente({
-                vehicule: req.body.vehicule,
-                immat: req.body.immat,
-                serie: req.body.serie,
-                kilometrage: req.body.kilometrage,
-                annee: req.body.annee,
-                energie: req.body.energie,
-                puissance: req.body.puissance,
-                ville: req.body.ville,
-                code: req.body.code,
-                description: req.body.description,
-                prix: req.body.prix,
-                images: resizedImages.map(img => img.originalname) // Utilisez les noms d'origine pour les images redimensionnées
-            });
+    const Data = new Vente({
+        vehicule: req.body.vehicule,
+        immat: req.body.immat,
+        serie: req.body.serie,
+        kilometrage: req.body.kilometrage,
+        annee: req.body.annee,
+        energie: req.body.energie,
+        puissance: req.body.puissance,
+        ville: req.body.ville,
+        code: req.body.code,
+        description: req.body.description,
+        prix: req.body.prix,
+        images: images
+    });
 
-            Data.save()
-                .then(() => {
-                    console.log("Car saved successfully");
-                    res.json({ redirect: '/buy' });
-                })
-                .catch(error => {
-                    console.error(error);
-                    res.status(500).json({ error: "Internal Server Error" })
-                });
+    Data.save()
+        .then(() => {
+            console.log("Car saved successfully");
+            res.json({ redirect: '/buy' });
         })
         .catch(error => {
             console.error(error);
             res.status(500).json({ error: "Internal Server Error" })
-        });
+        })
 });
 
 app.get('/allsales', function (req, res) {
