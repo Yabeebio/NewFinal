@@ -342,7 +342,7 @@ app.delete('/deletethisuser/:id', (req, res) => {
     User.findOneAndDelete({ _id: req.params.id })
         .then(() => {
             console.log("This user has been deleted successfully");
-            res.redirect("https://frontend-final-five.vercel.app/panelcontrol");
+            /* res.redirect("https://frontend-final-five.vercel.app/panelcontrol"); */
         })
         .catch((error) => {
             console.log(error);
