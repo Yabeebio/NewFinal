@@ -82,8 +82,11 @@ const s3 = new aws.S3({
 const upload = multer({
     storage: multerS3({
         s3: s3,
-        bucket: 'YOUR_BUCKET_NAME',
+        bucket: ' cyclic-lime-easy-beaver-eu-west-1',
         acl: 'public-read',
+        accessKeyId: process.env.CYCLIC_AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.CYCLIC_AWS_SECRET_ACCESS_KEY,
+        region: process.env.CYCLIC_AWS_REGION,
         metadata: function (req, file, cb) {
             cb(null, { fieldName: file.fieldname });
         },
