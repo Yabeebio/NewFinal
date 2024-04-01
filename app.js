@@ -1,16 +1,16 @@
-const express = require('express');
-const app = express();
+var express = require('express');
+var app = express();
 
-const bodyParser = require('body-parser');
+var bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: false }));
 require('dotenv').config();
 
 // Connexion MongoDB
-const mongoose = require('mongoose');
+var mongoose = require('mongoose');
 const url = process.env.DATABASE_URL;
 
 mongoose.connect(url)
-    .then(() => console.log("Mongodb connected"))
+    .then(console.log("Mongodb connected"))
     .catch(err => console.log(err));
 
 app.set('view engine', 'ejs');
@@ -47,22 +47,27 @@ const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/');
+    destination: (req, file, cb) => {
+        cb(null, path.join(__dirname, 'uploads'));
+        /* cb(null, 'uploads/') */ // DESTINATION DES IMAGES
     },
-    filename: function (req, file, cb) {
-        cb(null, file.originalname);
+    filename: (req, file, cb) => {
+        cb(null, file.originalname); // CHANGER LE NOM DES IMAGES
     }
 });
 
 const upload = multer({ storage: storage });
+
 
 // MODELE SETUP
 const User = require('./models/User');
 const Vente = require('./models/Vente');
 const Support = require('./models/Support');
 
+const { jwtDecode } = require('jwt-decode');
+
 // INSCRIPTION
+
 app.post('/api/inscription', function (req, res) {
     const Data = new User({
         nom: req.body.nom,
@@ -71,7 +76,7 @@ app.post('/api/inscription', function (req, res) {
         password: bcrypt.hashSync(req.body.password, 10),
         tel: req.body.tel,
         admin: req.body.admin
-    });
+    })
 
     Data.save()
         .then(() => {
@@ -82,6 +87,7 @@ app.post('/api/inscription', function (req, res) {
 });
 
 // CONNEXION
+
 app.post('/api/connexion', function (req, res) {
     User.findOne({
         email: req.body.email
@@ -114,6 +120,7 @@ app.post('/api/connexion', function (req, res) {
 });
 
 // GET USER
+
 app.get("/profile/:id", (req, res) => {
     User.findOne({
         _id: req.params.id
@@ -127,6 +134,7 @@ app.get("/profile/:id", (req, res) => {
 });
 
 // UPDATE
+
 app.put('/profile/:id', (req, res) => {
     const Data = {
         nom: req.body.nom,
@@ -134,41 +142,45 @@ app.put('/profile/:id', (req, res) => {
         email: req.body.email,
         password: req.body.password,
         tel: req.body.tel
-    };
+    }
 
     User.updateOne({
         _id: req.params.id
     }, { $set: Data })
         .then(() => {
+            /* res.json({ success: true, message: 'Profile updated successfully' }); */
             res.redirect(process.env.FRONTEND_URL + '/profile/' + req.params.id)
         })
         .catch((error) => {
             console.log(error);
             res.status(500).json({ success: false, message: 'Internal Server Error' });
         })
-});
+})
 
 // DELETE PROFILE
+
 app.delete('/deleteuser/:id', (req, res) => {
     User.findOneAndDelete({ _id: req.params.id })
         .then(() => {
             console.log("User deleted successfully");
+            /* res.redirect(process.env.FRONTEND_URL) */
             res.redirect("https://lime-easy-beaver.cyclic.app/logout")
         })
         .catch((error) => {
             console.log(error);
         })
-});
+})
 
 // ADD FOR SALES
-app.post('/addsales', upload.array('images', 50), function (req, res) {
+
+app.post('/addSales', upload.array('images', 50), function (req, res) {
     if (!req.files || req.files.length === 0) {
         return res.status(400).json({ message: "No files uploaded" });
     }
 
     const images = req.files.map(file => file.originalname);
 
-    const nouvelleVente = new Vente({
+    const Data = new Vente({
         vehicule: req.body.vehicule,
         immat: req.body.immat,
         serie: req.body.serie,
@@ -183,17 +195,32 @@ app.post('/addsales', upload.array('images', 50), function (req, res) {
         images: images
     });
 
-    nouvelleVente.save()
+    Data.save()
         .then(() => {
+            console.log("Car saved successfully");
+
+            // Ajouter les en-têtes CORS ici
+            res.header('Access-Control-Allow-Origin', 'https://frontend-final-five.vercel.app');
+            res.header('Access-Control-Allow-Credentials', true);
+
+            // Renvoyer la réponse JSON avec le code de redirection
             res.json({ redirect: '/buy' });
         })
         .catch(error => {
             console.error(error);
-            res.status(500).json({ error: "Internal Server Error" });
-        });
+            res.status(500).json({ error: "Internal Server Error" })
+        })
+});
+
+app.get('/allsales', function (req, res) {
+    Vente.find()
+        .then((data) => {
+            res.json(data);
+        })
 });
 
 // HISTORIQUE DES ANNONCES DE L'UTILISATEUR
+
 app.get('/api/annonces', validateToken, (req, res) => {
     const userId = req.user.id;
     Vente.find({ userId: userId })
@@ -206,7 +233,9 @@ app.get('/api/annonces', validateToken, (req, res) => {
         });
 });
 
+
 // RECUPERER UNE SEULE ANNONCE SELON L'ID
+
 app.get('/sale/:id', function (req, res) {
     Vente.findOne({
         _id: req.params.id
@@ -224,6 +253,7 @@ app.get('/sale/:id', function (req, res) {
 });
 
 // RECHERCHE VEHICULE
+
 app.get('/api/search', async (req, res) => {
     const query = req.query.query;
     try {
@@ -236,6 +266,7 @@ app.get('/api/search', async (req, res) => {
 });
 
 // ADD MESSAGE
+
 app.post('/api/contacter', function (req, res) {
     const Data = new Support({
         email: req.body.email,
@@ -260,6 +291,7 @@ app.get('/allmessages', function (req, res) {
 });
 
 // DELETE MESSAGE
+
 app.delete('/deletemessage/:id', (req, res) => {
     Support.findOneAndDelete({ _id: req.params.id })
         .then(() => {
@@ -272,6 +304,7 @@ app.delete('/deletemessage/:id', (req, res) => {
         });
 });
 
+
 app.get('/allusers', function (req, res) {
     User.find()
         .then((data) => {
@@ -280,6 +313,7 @@ app.get('/allusers', function (req, res) {
 });
 
 // DELETE USER BY ADMIN
+
 app.delete('/deletethisuser/:id', (req, res) => {
     User.findOneAndDelete({ _id: req.params.id })
         .then(() => {
@@ -292,6 +326,7 @@ app.delete('/deletethisuser/:id', (req, res) => {
         });
 });
 
+
 app.get('/logout', (req, res) => {
     res.clearCookie("access_token");
     res.redirect(process.env.FRONTEND_URL)
@@ -300,10 +335,10 @@ app.get('/logout', (req, res) => {
 app.get('/getJwt', validateToken, (req, res) => {
     console.log('Requête vers /getJwt reçue');
     res.header('Access-Control-Allow-Origin', 'https://frontend-final-five.vercel.app');
-    res.header('Access-Control-Allow-Credentials', true);
+    res.header('Access-Control-Allow-Credentials', true); // Ajout de cet en-tête
     res.json(jwtDecode(req.cookies['access_token']));
 });
 
-const server = app.listen(5000, function () {
+var server = app.listen(5000, function () {
     console.log("Server listening on port 5000");
 });
