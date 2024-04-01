@@ -75,11 +75,11 @@ const storage = multer.diskStorage({
 const upload = multer({
     storage: multerS3({
         s3: s3fs,
-        bucket: process.env.S3_BUCKET_NAME,
-        contentType: multerS3.AUTO_CONTENT_TYPE, // Détermine automatiquement le type de contenu
-        acl: 'public-read', // Autorise l'accès public aux fichiers
+        bucket: "cyclic-lime-easy-beaver-eu-west-1",
+        contentType: multerS3.AUTO_CONTENT_TYPE, 
+        acl: 'public-read', 
         key: function (req, file, cb) {
-            cb(null, Date.now().toString() + '-' + file.originalname); // Nom du fichier dans S3
+            cb(null, Date.now().toString() + '-' + file.originalname); 
         }
     })
 });
