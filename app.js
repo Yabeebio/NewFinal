@@ -13,7 +13,16 @@ mongoose.connect(url)
     .then(console.log("Mongodb connected"))
     .catch(err => console.log(err));
 
+
 app.set('view engine', 'ejs');
+
+// Configuration de l'accès à AWS S3
+const s3 = new AWS.S3({
+    region: 'eu-west-1', // Remplacez par la région correcte
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    sessionToken: process.env.AWS_SESSION_TOKEN
+});
 
 // Accès aux données du host:5000
 const cors = require('cors');
@@ -35,6 +44,8 @@ app.use((req, res, next) => {
 });
 
 app.use(cors(corsOptions));
+
+const AWS = require('aws-sdk');
 
 // Method put & delete pour express (pas reconnu nativement)
 const methodOverride = require('method-override');
@@ -187,7 +198,7 @@ app.delete('/deleteuser/:id', (req, res) => {
 
 // ADD FOR SALES
 
-app.post('/addsales', upload.array('images', 50), function (req, res) {
+/* app.post('/addsales', upload.array('images', 50), function (req, res) {
     if (!req.files || req.files.length === 0) {
         return res.status(400).json({ message: "No files uploaded" });
     }
@@ -225,6 +236,53 @@ app.post('/addsales', upload.array('images', 50), function (req, res) {
             res.status(500).json({ error: "Internal Server Error" })
         })
 });
+ */
+app.post('/addsales', upload.array('images', 50), async (req, res) => {
+    if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ message: "No files uploaded" });
+    }
+
+    const images = req.files.map(file => ({
+        filename: file.originalname,
+        buffer: fs.readFileSync(file.path)
+    }));
+
+    try {
+        const uploadedFiles = await Promise.all(images.map(async (image) => {
+            const params = {
+                Bucket: 'cyclic-lime-easy-beaver-eu-west-1',
+                Key: `some_files/${image.filename}`,
+                Body: image.buffer
+            };
+            await s3.upload(params).promise();
+            return image.filename;
+        }));
+
+        const Data = new Vente({
+            vehicule: req.body.vehicule,
+            immat: req.body.immat,
+            serie: req.body.serie,
+            kilometrage: req.body.kilometrage,
+            annee: req.body.annee,
+            energie: req.body.energie,
+            puissance: req.body.puissance,
+            ville: req.body.ville,
+            code: req.body.code,
+            description: req.body.description,
+            prix: req.body.prix,
+            images: images
+        });
+
+        await Data.save();
+        console.log("Car saved successfully");
+
+        res.json({ redirect: '/buy' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
 
 app.get('/allsales', function (req, res) {
     Vente.find()
