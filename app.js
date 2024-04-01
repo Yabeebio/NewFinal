@@ -53,33 +53,24 @@ const { createTokens, validateToken } = require('./JWT');
 // Multer
 const fs = require('fs');
 const multer = require('multer');
-const multerS3 = require('multer-s3');
 const path = require('path');
-const aws = require('aws-sdk');
-const s3 = new aws.S3({
-    accessKeyId: process.env.CYCLIC_AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.CYCLIC_AWS_SECRET_ACCESS_KEY,
-    region: process.env.CYCLIC_AWS_REGION
-});
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir);
 }
 
-const upload = multer({
-    storage: multerS3({
-        s3: s3,
-        bucket: 'cyclic-lime-easy-beaver-eu-west-1',
-        acl: 'public-read',
-        metadata: function (req, file, cb) {
-            cb(null, { fieldName: file.fieldname });
-        },
-        key: function (req, file, cb) {
-            cb(null, Date.now().toString() + '-' + file.originalname);
-        }
-    })
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        cb(null, file.originalname);
+    }
 });
+
+const upload = multer({ storage: storage });
 
 
 // MODELE SETUP
@@ -221,6 +212,12 @@ app.post('/addsales', upload.array('images', 50), function (req, res) {
     Data.save()
         .then(() => {
             console.log("Car saved successfully");
+
+            // Ajouter les en-têtes CORS ici
+            res.header('Access-Control-Allow-Origin', 'https://frontend-final-five.vercel.app');
+            res.header('Access-Control-Allow-Credentials', true);
+
+            // Renvoyer la réponse JSON avec le code de redirection
             res.json({ redirect: '/buy' });
         })
         .catch(error => {
