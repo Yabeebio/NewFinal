@@ -187,6 +187,8 @@ app.delete('/deleteuser/:id', (req, res) => {
 
 // ADD FOR SALES
 
+const sharp = require('sharp');
+
 app.post('/addsales', upload.array('images', 50), function (req, res) {
     if (!req.files || req.files.length === 0) {
         return res.status(400).json({ message: "No files uploaded" });
@@ -212,6 +214,19 @@ app.post('/addsales', upload.array('images', 50), function (req, res) {
     Data.save()
         .then(() => {
             console.log("Car saved successfully");
+
+            // Redimensionner les images téléchargées
+            req.files.forEach(file => {
+                sharp(file.path)
+                    .resize({ width: 800, height: 600 }) // Redimensionner les images à une largeur de 800 pixels (ajustez selon vos besoins)
+                    .toFile(path.join(uploadDir, 'resized', file.originalname), (err, info) => {
+                        if (err) {
+                            console.error('Error resizing image:', err);
+                        } else {
+                            console.log('Image resized:', info);
+                        }
+                    });
+            });
 
             // Ajouter les en-têtes CORS ici
             res.header('Access-Control-Allow-Origin', 'https://frontend-final-five.vercel.app');
