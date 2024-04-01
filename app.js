@@ -64,6 +64,7 @@ const { createTokens, validateToken } = require('./JWT');
 // Multer
 const fs = require('fs');
 const multer = require('multer');
+const multerS3 = require('multer-s3');
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -81,7 +82,19 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({ storage: storage });
+// Remplacer le middleware de stockage par Multer-S3
+const upload = multer({
+    storage: multerS3({
+        s3: s3,
+        bucket: 'cyclic-lime-easy-beaver-eu-west-1', // Remplacez par le nom de votre bucket S3
+        acl: 'public-read',
+        key: function (req, file, cb) {
+            cb(null, Date.now().toString() + '-' + file.originalname);
+        }
+    })
+});
+
+/* const upload = multer({ storage: storage }); */
 
 
 // MODELE SETUP
@@ -242,17 +255,14 @@ app.post('/addsales', upload.array('images', 50), async (req, res) => {
         return res.status(400).json({ message: "No files uploaded" });
     }
 
-    const images = req.files.map(file => ({
-        filename: file.originalname,
-        buffer: fs.readFileSync(file.path)
-    }));
+    const images = req.files.map(file => file.originalname);
 
     try {
         const uploadedFiles = await Promise.all(images.map(async (image) => {
             const params = {
                 Bucket: 'cyclic-lime-easy-beaver-eu-west-1',
                 Key: `some_files/${image.filename}`,
-                Body: image.buffer
+                Body: fs.readFileSync(file.path)
             };
             await s3.upload(params).promise();
             return image.filename;
@@ -270,7 +280,7 @@ app.post('/addsales', upload.array('images', 50), async (req, res) => {
             code: req.body.code,
             description: req.body.description,
             prix: req.body.prix,
-            images: images
+            images: uploadedFiles // Utiliser les noms de fichiers téléchargés sur S3
         });
 
         await Data.save();
