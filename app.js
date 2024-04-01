@@ -34,10 +34,6 @@ app.use(methodOverride('_method'));
 // Bcrypt : Pour hasher les mots de passe
 const bcrypt = require('bcrypt');
 
-// SHARP POUR REDIMENSIONNER LES IMAGES
-
-const sharp = require('sharp');
-
 // Cookie parser
 const cookieParser = require('cookie-parser');
 app.use(cookieParser());
