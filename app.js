@@ -46,17 +46,14 @@ const multer = require('multer');
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Configuration AWS
-const AWS = require('aws-sdk');
-AWS.config.update({
-    region: process.env.AWS_REGION,
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    sessionToken: process.env.AWS_SESSION_TOKEN
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/');
+    },
+    filename: function (req, file, cb) {
+        cb(null, file.originalname);
+    }
 });
-const s3 = new AWS.S3();
-
-const storage = multer.memoryStorage();
 
 const upload = multer({ storage: storage });
 
@@ -65,10 +62,7 @@ const User = require('./models/User');
 const Vente = require('./models/Vente');
 const Support = require('./models/Support');
 
-const { jwtDecode } = require('jwt-decode');
-
 // INSCRIPTION
-
 app.post('/api/inscription', function (req, res) {
     const Data = new User({
         nom: req.body.nom,
@@ -88,7 +82,6 @@ app.post('/api/inscription', function (req, res) {
 });
 
 // CONNEXION
-
 app.post('/api/connexion', function (req, res) {
     User.findOne({
         email: req.body.email
@@ -121,7 +114,6 @@ app.post('/api/connexion', function (req, res) {
 });
 
 // GET USER
-
 app.get("/profile/:id", (req, res) => {
     User.findOne({
         _id: req.params.id
@@ -135,7 +127,6 @@ app.get("/profile/:id", (req, res) => {
 });
 
 // UPDATE
-
 app.put('/profile/:id', (req, res) => {
     const Data = {
         nom: req.body.nom,
@@ -149,7 +140,6 @@ app.put('/profile/:id', (req, res) => {
         _id: req.params.id
     }, { $set: Data })
         .then(() => {
-            /* res.json({ success: true, message: 'Profile updated successfully' }); */
             res.redirect(process.env.FRONTEND_URL + '/profile/' + req.params.id)
         })
         .catch((error) => {
@@ -159,12 +149,10 @@ app.put('/profile/:id', (req, res) => {
 });
 
 // DELETE PROFILE
-
 app.delete('/deleteuser/:id', (req, res) => {
     User.findOneAndDelete({ _id: req.params.id })
         .then(() => {
             console.log("User deleted successfully");
-            /* res.redirect(process.env.FRONTEND_URL) */
             res.redirect("https://lime-easy-beaver.cyclic.app/logout")
         })
         .catch((error) => {
@@ -173,78 +161,39 @@ app.delete('/deleteuser/:id', (req, res) => {
 });
 
 // ADD FOR SALES
-
-app.post('/addSales', upload.array('images', 50), async function (req, res) {
+app.post('/addsales', upload.array('images', 50), function (req, res) {
     if (!req.files || req.files.length === 0) {
         return res.status(400).json({ message: "No files uploaded" });
     }
 
     const images = req.files.map(file => file.originalname);
 
-    try {
-        // Promesses pour téléverser chaque fichier sur S3
-        const uploadPromises = req.files.map(file => {
-            const uploadParams = {
-                Bucket: 'cyclic-lime-easy-beaver-eu-west-1',
-                Key: file.originalname,
-                Body: file.buffer // Utiliser le buffer du fichier pour le téléversement sur S3
-            };
-            return s3.upload(uploadParams).promise();
+    const nouvelleVente = new Vente({
+        vehicule: req.body.vehicule,
+        immat: req.body.immat,
+        serie: req.body.serie,
+        kilometrage: req.body.kilometrage,
+        annee: req.body.annee,
+        energie: req.body.energie,
+        puissance: req.body.puissance,
+        ville: req.body.ville,
+        code: req.body.code,
+        description: req.body.description,
+        prix: req.body.prix,
+        images: images
+    });
+
+    nouvelleVente.save()
+        .then(() => {
+            res.json({ redirect: '/buy' });
+        })
+        .catch(error => {
+            console.error(error);
+            res.status(500).json({ error: "Internal Server Error" });
         });
-
-        // Attendre que toutes les promesses de téléversement soient résolues
-        await Promise.all(uploadPromises);
-
-        console.log("Images uploaded successfully");
-
-        // Créer un nouvel objet Vente avec les données envoyées dans la requête
-        const Data = new Vente({
-            vehicule: req.body.vehicule,
-            immat: req.body.immat,
-            serie: req.body.serie,
-            kilometrage: req.body.kilometrage,
-            annee: req.body.annee,
-            energie: req.body.energie,
-            puissance: req.body.puissance,
-            ville: req.body.ville,
-            code: req.body.code,
-            description: req.body.description,
-            prix: req.body.prix,
-            images: images // Utiliser les noms des fichiers des images téléversées
-        });
-
-        // Enregistrer la nouvelle vente dans la base de données
-        await Data.save();
-
-        console.log("Vente enregistrée avec succès");
-
-        // Renvoyer une réponse JSON avec le code de redirection
-        res.json({ redirect: '/buy' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Internal Server Error" });
-    }
-});
-
-app.get('/getSalesImages/:imageName', async function (req, res) {
-    try {
-        const params = {
-            Bucket: 'cyclic-lime-easy-beaver-eu-west-1',
-            Key: req.params.imageName
-        };
-
-        const data = await s3.getObject(params).promise();
-
-        res.set('Content-Type', 'image/jpeg'); // ou 'image/png' selon le type d'image
-        res.send(data.Body);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Internal Server Error" });
-    }
 });
 
 // HISTORIQUE DES ANNONCES DE L'UTILISATEUR
-
 app.get('/api/annonces', validateToken, (req, res) => {
     const userId = req.user.id;
     Vente.find({ userId: userId })
@@ -257,9 +206,7 @@ app.get('/api/annonces', validateToken, (req, res) => {
         });
 });
 
-
 // RECUPERER UNE SEULE ANNONCE SELON L'ID
-
 app.get('/sale/:id', function (req, res) {
     Vente.findOne({
         _id: req.params.id
@@ -277,7 +224,6 @@ app.get('/sale/:id', function (req, res) {
 });
 
 // RECHERCHE VEHICULE
-
 app.get('/api/search', async (req, res) => {
     const query = req.query.query;
     try {
@@ -290,7 +236,6 @@ app.get('/api/search', async (req, res) => {
 });
 
 // ADD MESSAGE
-
 app.post('/api/contacter', function (req, res) {
     const Data = new Support({
         email: req.body.email,
@@ -315,7 +260,6 @@ app.get('/allmessages', function (req, res) {
 });
 
 // DELETE MESSAGE
-
 app.delete('/deletemessage/:id', (req, res) => {
     Support.findOneAndDelete({ _id: req.params.id })
         .then(() => {
@@ -328,7 +272,6 @@ app.delete('/deletemessage/:id', (req, res) => {
         });
 });
 
-
 app.get('/allusers', function (req, res) {
     User.find()
         .then((data) => {
@@ -337,7 +280,6 @@ app.get('/allusers', function (req, res) {
 });
 
 // DELETE USER BY ADMIN
-
 app.delete('/deletethisuser/:id', (req, res) => {
     User.findOneAndDelete({ _id: req.params.id })
         .then(() => {
@@ -350,7 +292,6 @@ app.delete('/deletethisuser/:id', (req, res) => {
         });
 });
 
-
 app.get('/logout', (req, res) => {
     res.clearCookie("access_token");
     res.redirect(process.env.FRONTEND_URL)
@@ -359,7 +300,7 @@ app.get('/logout', (req, res) => {
 app.get('/getJwt', validateToken, (req, res) => {
     console.log('Requête vers /getJwt reçue');
     res.header('Access-Control-Allow-Origin', 'https://frontend-final-five.vercel.app');
-    res.header('Access-Control-Allow-Credentials', true); // Ajout de cet en-tête
+    res.header('Access-Control-Allow-Credentials', true);
     res.json(jwtDecode(req.cookies['access_token']));
 });
 
