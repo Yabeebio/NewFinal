@@ -174,31 +174,31 @@ app.delete('/deleteuser/:id', (req, res) => {
 
 // ADD FOR SALES
 
-app.post('/addSales', upload.array('images', 50), function (req, res) {
+app.post('/addSales', upload.array('images', 50), async function (req, res) {
     if (!req.files || req.files.length === 0) {
         return res.status(400).json({ message: "No files uploaded" });
     }
 
     const images = req.files.map(file => file.originalname);
 
-    // Promesses pour téléverser chaque fichier sur S3
-    const uploadPromises = req.files.map(file => {
-        const uploadParams = {
-            Bucket: 'cyclic-lime-easy-beaver-eu-west-1',
-            Key: file.originalname,
-            Body: file.buffer // Utiliser le buffer du fichier pour le téléversement sur S3
-        };
-        return s3.upload(uploadParams).promise();
-    });
+    try {
+        // Promesses pour téléverser chaque fichier sur S3
+        const uploadPromises = req.files.map(file => {
+            const uploadParams = {
+                Bucket: 'cyclic-lime-easy-beaver-eu-west-1',
+                Key: file.originalname,
+                Body: file.buffer // Utiliser le buffer du fichier pour le téléversement sur S3
+            };
+            return s3.upload(uploadParams).promise();
+        });
 
-    // Attendre que toutes les promesses de téléversement soient résolues
-    Promise.all(uploadPromises)
-    .then(() => {
-        // Tous les fichiers ont été téléversés avec succès sur S3
+        // Attendre que toutes les promesses de téléversement soient résolues
+        await Promise.all(uploadPromises);
+
         console.log("Images uploaded successfully");
 
         // Créer un nouvel objet Vente avec les données envoyées dans la requête
-        const nouvelleVente = new Vente({
+        const Data = new Vente({
             vehicule: req.body.vehicule,
             immat: req.body.immat,
             serie: req.body.serie,
@@ -214,26 +214,33 @@ app.post('/addSales', upload.array('images', 50), function (req, res) {
         });
 
         // Enregistrer la nouvelle vente dans la base de données
-        return nouvelleVente.save();
-    })
-    .then(() => {
-        // La vente a été enregistrée avec succès dans la base de données
+        await Data.save();
+
         console.log("Vente enregistrée avec succès");
 
         // Renvoyer une réponse JSON avec le code de redirection
         res.json({ redirect: '/buy' });
-    })
-    .catch(error => {
+    } catch (error) {
         console.error(error);
         res.status(500).json({ error: "Internal Server Error" });
-    });
+    }
 });
 
-app.get('/allsales', function (req, res) {
-    Vente.find()
-        .then((data) => {
-            res.json(data);
-        })
+app.get('/getSalesImages/:imageName', async function (req, res) {
+    try {
+        const params = {
+            Bucket: 'cyclic-lime-easy-beaver-eu-west-1',
+            Key: req.params.imageName
+        };
+
+        const data = await s3.getObject(params).promise();
+
+        res.set('Content-Type', 'image/jpeg'); // ou 'image/png' selon le type d'image
+        res.send(data.Body);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
 });
 
 // HISTORIQUE DES ANNONCES DE L'UTILISATEUR
