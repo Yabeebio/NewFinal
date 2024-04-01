@@ -17,6 +17,7 @@ mongoose.connect(url)
 app.set('view engine', 'ejs');
 
 // Configuration de l'accès à AWS S3
+const AWS = require('aws-sdk');
 const s3 = new AWS.S3({
     region: 'eu-west-1', // Remplacez par la région correcte
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -45,7 +46,6 @@ app.use((req, res, next) => {
 
 app.use(cors(corsOptions));
 
-const AWS = require('aws-sdk');
 
 // Method put & delete pour express (pas reconnu nativement)
 const methodOverride = require('method-override');
