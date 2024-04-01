@@ -322,7 +322,7 @@ app.delete('/deletemessage/:id', (req, res) => {
     Support.findOneAndDelete({ _id: req.params.id })
         .then(() => {
             console.log("Message deleted successfully");
-            res.redirect("https://frontend-final-five.vercel.app/")
+            /* res.redirect("https://frontend-final-five.vercel.app/message") */
         })
         .catch((error) => {
             console.log(error);
@@ -344,7 +344,7 @@ app.delete('/deletethisuser/:id', (req, res) => {
     User.findOneAndDelete({ _id: req.params.id })
         .then(() => {
             console.log("This user has been deleted successfully");
-            /* res.redirect("https://frontend-final-five.vercel.app/panelcontrol"); */
+            res.redirect("https://frontend-final-five.vercel.app/panelcontrol");
         })
         .catch((error) => {
             console.log(error);
