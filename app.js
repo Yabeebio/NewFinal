@@ -55,15 +55,20 @@ const fs = require('fs');
 const multer = require('multer');
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+const tmpDir = '/tmp/uploads';
 
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir);
 }
 
+if (!fs.existsSync(tmpDir)) {
+    fs.mkdirSync(tmpDir, { recursive: true });
+}
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, uploadDir);
+        cb(null, tmpDir); // Utiliser le répertoire /tmp pour stocker les fichiers temporaires
     },
     filename: (req, file, cb) => {
         cb(null, file.originalname);
