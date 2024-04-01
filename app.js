@@ -26,6 +26,14 @@ const corsOptions = {
     credentials: true // permettre les cookies et autres informations d'identification
 };
 
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', 'https://frontend-final-five.vercel.app');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    next();
+});
+
 app.use(cors(corsOptions));
 
 // Method put & delete pour express (pas reconnu nativement)
