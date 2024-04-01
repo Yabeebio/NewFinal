@@ -55,23 +55,15 @@ const fs = require('fs');
 const multer = require('multer');
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-const tmpDir = '/tmp/uploads';
-
-const publicDirectoryPath = path.join(__dirname, 'public');
-app.use(express.static(publicDirectoryPath));
 
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir);
 }
 
-if (!fs.existsSync(tmpDir)) {
-    fs.mkdirSync(tmpDir, { recursive: true });
-}
-
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'public/uploads'); // Utilisez le répertoire public pour stocker les fichiers
+        cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
         cb(null, file.originalname);
