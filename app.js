@@ -55,38 +55,23 @@ const fs = require('fs');
 const multer = require('multer');
 const multerS3 = require('multer-s3');
 const path = require('path');
-const s3fs = require('@cyclic.sh/s3fs')(process.env.S3_BUCKET_NAME);
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+const aws = require('aws-sdk');
+const s3 = new aws.S3({
+    accessKeyId: process.env.CYCLIC_AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.CYCLIC_AWS_SECRET_ACCESS_KEY,
+    region: process.env.CYCLIC_AWS_REGION
+});
 
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir);
 }
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        cb(null, file.originalname);
-    }
-});
-
-const aws = require('aws-sdk');
-const s3 = new aws.S3({
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    region: process.env.AWS_REGION
-});
-
 const upload = multer({
     storage: multerS3({
         s3: s3,
-        bucket: ' cyclic-lime-easy-beaver-eu-west-1',
+        bucket: 'cyclic-lime-easy-beaver-eu-west-1',
         acl: 'public-read',
-        accessKeyId: process.env.CYCLIC_AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.CYCLIC_AWS_SECRET_ACCESS_KEY,
-        region: process.env.CYCLIC_AWS_REGION,
         metadata: function (req, file, cb) {
             cb(null, { fieldName: file.fieldname });
         },
