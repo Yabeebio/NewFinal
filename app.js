@@ -173,7 +173,7 @@ app.delete('/deleteuser/:id', (req, res) => {
 
 // ADD FOR SALES
 
-app.post('/addSales', upload.array('images', 50), function (req, res) {
+app.post('/addsales', upload.array('images', 50), function (req, res) {
     if (!req.files || req.files.length === 0) {
         return res.status(400).json({ message: "No files uploaded" });
     }
