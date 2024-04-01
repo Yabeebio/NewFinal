@@ -322,7 +322,7 @@ app.delete('/deletemessage/:id', (req, res) => {
     Support.findOneAndDelete({ _id: req.params.id })
         .then(() => {
             console.log("Message deleted successfully");
-            /* res.redirect("https://frontend-final-five.vercel.app/message") */
+            res.redirect("https://frontend-final-five.vercel.app/message")
         })
         .catch((error) => {
             console.log(error);
