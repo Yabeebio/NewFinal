@@ -72,6 +72,8 @@ const storage = multer.diskStorage({
         cb(null, tmpDir); // Utiliser le répertoire /tmp pour stocker les fichiers temporaires
     },
     filename: (req, file, cb) => {
+        const filename = `${Date.now()}-${file.originalname}`;
+        console.log("Destination path:", path.join(tmpDir, filename));
         cb(null, file.originalname);
     }
 });
