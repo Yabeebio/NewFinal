@@ -46,7 +46,7 @@ const rateLimit = require('express-rate-limit');
 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limite à 100 requêtes par fenêtre
+    max: 200, // Limite à 100 requêtes par fenêtre
     message: "Trop de requêtes provenant de cette adresse IP, veuillez réessayer plus tard."
 });
 
