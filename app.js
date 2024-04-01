@@ -18,21 +18,12 @@ app.set('view engine', 'ejs');
 // Accès aux données du host:5000
 const cors = require('cors');
 
-// CORS configuration
 const corsOptions = {
     origin: 'https://frontend-final-five.vercel.app',
     methods: 'GET, POST, PUT, PATCH, DELETE',
     allowedHeaders: 'Content-Type, Authorization',
-    credentials: true // permettre les cookies et autres informations d'identification
+    credentials: true
 };
-
-app.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', 'https://frontend-final-five.vercel.app');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    next();
-});
 
 app.use(cors(corsOptions));
 
