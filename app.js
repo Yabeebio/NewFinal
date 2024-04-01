@@ -185,37 +185,21 @@ app.post('/addSales', upload.array('images', 50), function (req, res) {
 
     const images = req.files.map(file => file.originalname);
 
-    // Promesses pour redimensionner et téléverser chaque fichier sur S3
+    // Promesses pour téléverser chaque fichier sur S3
     const uploadPromises = req.files.map(file => {
-        return new Promise((resolve, reject) => {
-            sharp(file.buffer)
-                .resize({ width: 800, height: 600 }) // Redimensionner l'image
-                .toBuffer() // Convertir l'image redimensionnée en tampon
-                .then(resizedBuffer => {
-                    const uploadParams = {
-                        Bucket: 'cyclic-lime-easy-beaver-eu-west-1',
-                        Key: 'resized_' + file.originalname,
-                        Body: resizedBuffer // Utiliser le buffer de l'image redimensionnée pour le téléversement sur S3
-                    };
-                    // Téléverser l'image redimensionnée sur S3
-                    return s3.upload(uploadParams).promise();
-                })
-                .then(() => {
-                    // L'image redimensionnée a été téléversée avec succès sur S3
-                    console.log("Resized image uploaded successfully");
-                    resolve();
-                })
-                .catch(error => {
-                    console.error("Error resizing/uploading image:", error);
-                    reject(error);
-                });
-        });
+        const uploadParams = {
+            Bucket: 'cyclic-lime-easy-beaver-eu-west-1',
+            Key: file.originalname,
+            Body: file.buffer // Utiliser le buffer du fichier pour le téléversement sur S3
+        };
+        return s3.upload(uploadParams).promise();
     });
 
     // Attendre que toutes les promesses de téléversement soient résolues
     Promise.all(uploadPromises)
         .then(() => {
-            // Toutes les images ont été téléversées avec succès sur S3
+            // Tous les fichiers ont été téléversés avec succès sur S3
+            console.log("Images uploaded successfully");
 
             // Créer un nouvel objet Vente avec les données envoyées dans la requête
             const nouvelleVente = new Vente({
@@ -313,7 +297,7 @@ app.post('/api/contacter', function (req, res) {
     Data.save()
         .then(() => {
             console.log('Message sended')
-            res.redirect(process.env.FRONTEND_URL)
+            res.redirect("https://frontend-final-five.vercel.app/")
         })
         .catch((error) => {
             console.log(error);
@@ -333,7 +317,7 @@ app.delete('/deletemessage/:id', (req, res) => {
     Support.findOneAndDelete({ _id: req.params.id })
         .then(() => {
             console.log("Message deleted successfully");
-            res.redirect(process.env.FRONTEND_URL)
+            res.redirect("https://frontend-final-five.vercel.app/")
         })
         .catch((error) => {
             console.log(error);
@@ -355,7 +339,7 @@ app.delete('/deletethisuser/:id', (req, res) => {
     User.findOneAndDelete({ _id: req.params.id })
         .then(() => {
             console.log("This user has been deleted successfully");
-            res.redirect(process.env.FRONTEND_URL + '/panelcontrol');
+            res.redirect("https://frontend-final-five.vercel.app/panelcontrol");
         })
         .catch((error) => {
             console.log(error);
@@ -371,7 +355,7 @@ app.get('/logout', (req, res) => {
 
 app.get('/getJwt', validateToken, (req, res) => {
     console.log('Requête vers /getJwt reçue');
-    res.header('Access-Control-Allow-Origin', process.env.FRONTEND_URL);
+    res.header('Access-Control-Allow-Origin', 'https://frontend-final-five.vercel.app');
     res.header('Access-Control-Allow-Credentials', true); // Ajout de cet en-tête
     res.json(jwtDecode(req.cookies['access_token']));
 });
