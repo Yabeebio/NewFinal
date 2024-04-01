@@ -53,6 +53,7 @@ const { createTokens, validateToken } = require('./JWT');
 // Multer
 const fs = require('fs');
 const multer = require('multer');
+const multerS3 = require('multer-s3');
 const path = require('path');
 const s3fs = require('@cyclic.sh/s3fs')(process.env.S3_BUCKET_NAME);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
