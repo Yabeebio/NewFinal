@@ -57,6 +57,9 @@ const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 const tmpDir = '/tmp/uploads';
 
+const publicDirectoryPath = path.join(__dirname, 'public');
+app.use(express.static(publicDirectoryPath));
+
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir);
@@ -68,12 +71,9 @@ if (!fs.existsSync(tmpDir)) {
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        console.log("Destination path:", tmpDir);
-        cb(null, tmpDir); // Utiliser le répertoire /tmp pour stocker les fichiers temporaires
+        cb(null, 'public/uploads'); // Utilisez le répertoire public pour stocker les fichiers
     },
     filename: (req, file, cb) => {
-        const filename = `${Date.now()}-${file.originalname}`;
-        console.log("Destination path:", path.join(tmpDir, filename));
         cb(null, file.originalname);
     }
 });
