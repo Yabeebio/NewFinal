@@ -54,6 +54,7 @@ const { createTokens, validateToken } = require('./JWT');
 const fs = require('fs');
 const multer = require('multer');
 const path = require('path');
+const s3fs = require('@cyclic.sh/s3fs')(process.env.S3_BUCKET_NAME);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const uploadDir = path.join(__dirname, 'uploads');
@@ -70,7 +71,17 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({
+    storage: multerS3({
+        s3: s3fs,
+        bucket: process.env.S3_BUCKET_NAME,
+        contentType: multerS3.AUTO_CONTENT_TYPE, // Détermine automatiquement le type de contenu
+        acl: 'public-read', // Autorise l'accès public aux fichiers
+        key: function (req, file, cb) {
+            cb(null, Date.now().toString() + '-' + file.originalname); // Nom du fichier dans S3
+        }
+    })
+});
 
 
 // MODELE SETUP
@@ -212,12 +223,6 @@ app.post('/addsales', upload.array('images', 50), function (req, res) {
     Data.save()
         .then(() => {
             console.log("Car saved successfully");
-
-            // Ajouter les en-têtes CORS ici
-            res.header('Access-Control-Allow-Origin', 'https://frontend-final-five.vercel.app');
-            res.header('Access-Control-Allow-Credentials', true);
-
-            // Renvoyer la réponse JSON avec le code de redirection
             res.json({ redirect: '/buy' });
         })
         .catch(error => {
