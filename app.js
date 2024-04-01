@@ -23,6 +23,7 @@ const corsOptions = {
     origin: 'https://frontend-final-five.vercel.app',
     methods: 'GET, POST, PUT, PATCH, DELETE',
     allowedHeaders: 'Content-Type, Authorization',
+    credentials: true // permettre les cookies et autres informations d'identification
 };
 
 app.use(cors(corsOptions));
