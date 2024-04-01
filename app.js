@@ -15,7 +15,7 @@ mongoose.connect(url)
 
 app.set('view engine', 'ejs');
 
-app.set('trust proxy', true);
+app.set('trust proxy', 'loopback');
 
 // Accès aux données du host:5000
 const cors = require('cors');
