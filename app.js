@@ -46,13 +46,17 @@ const multer = require('multer');
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+}
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, path.join(__dirname, 'uploads'));
-        /* cb(null, 'uploads/') */ // DESTINATION DES IMAGES
+        cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
-        cb(null, file.originalname); // CHANGER LE NOM DES IMAGES
+        cb(null, file.originalname);
     }
 });
 
