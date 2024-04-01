@@ -72,14 +72,17 @@ const storage = multer.diskStorage({
     }
 });
 
+const aws = require('aws-sdk');
+const s3 = new aws.S3();
+
 const upload = multer({
     storage: multerS3({
-        s3: s3fs,
-        bucket: "cyclic-lime-easy-beaver-eu-west-1",
-        contentType: multerS3.AUTO_CONTENT_TYPE, 
-        acl: 'public-read', 
+        s3: s3,
+        bucket: 'YOUR_BUCKET_NAME',
+        contentType: multerS3.AUTO_CONTENT_TYPE,
+        acl: 'public-read',
         key: function (req, file, cb) {
-            cb(null, Date.now().toString() + '-' + file.originalname); 
+            cb(null, Date.now().toString() + '-' + file.originalname);
         }
     })
 });
