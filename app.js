@@ -68,6 +68,7 @@ if (!fs.existsSync(tmpDir)) {
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
+        console.log("Destination path:", tmpDir);
         cb(null, tmpDir); // Utiliser le répertoire /tmp pour stocker les fichiers temporaires
     },
     filename: (req, file, cb) => {
