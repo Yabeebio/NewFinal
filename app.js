@@ -51,6 +51,7 @@ app.use(cookieParser());
 const { createTokens, validateToken } = require('./JWT');
 
 // Multer
+const fs = require('fs');
 const multer = require('multer');
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
