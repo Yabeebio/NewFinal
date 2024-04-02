@@ -1,11 +1,6 @@
 const mongoose = require('mongoose');
 
 const venteSchema = mongoose.Schema({
-    userId: {
-        type: mongoose.Schema.Types.ObjectId, // Type de données pour stocker les ID MongoDB
-        ref: 'User', // Référence à votre modèle d'utilisateur
-        required: true
-    },
     vehicule: { type: String, required: true },
     immat: { type: String, required: true, unique: true },
     serie: { type: String, required: true, unique: true },

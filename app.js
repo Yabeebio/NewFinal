@@ -82,8 +82,7 @@ const User = require('./models/User');
 const Vente = require('./models/Vente');
 const Support = require('./models/Support');
 
-/* const { jwtDecode } = require('jwt-decode'); */
-const jwt_decode = require('jwt-decode');
+const { jwtDecode } = require('jwt-decode');
 
 // INSCRIPTION
 
@@ -194,8 +193,8 @@ app.delete('/deleteuser/:id', (req, res) => {
 
 const sharp = require('sharp');
 
-app.post('/addSales', validateToken, upload.array('images', 50), function (req, res) {
-    if (!req.files || req.files.length === 0) {
+app.post('/addSales', upload.array('images', 50), function (req, res) {
+    if (!req.files || !req.files.length === 0) {
         return res.status(400).json({ message: "No files uploaded" });
     }
 
@@ -203,7 +202,7 @@ app.post('/addSales', validateToken, upload.array('images', 50), function (req, 
 
     req.files.forEach(file => {
         sharp(file.path)
-            .resize({ width: 800, height: 600 }) // Specify desired dimensions
+            .resize({ width: 800, height: 600 }) // Spécifiez les dimensions souhaitées
             .toFile('uploads/resized_' + file.originalname, (err, info) => {
                 if (err) {
                     console.error("Error resizing image:", err);
@@ -213,9 +212,7 @@ app.post('/addSales', validateToken, upload.array('images', 50), function (req, 
             });
     });
 
-    const userId = req.user.id; // Getting user ID from the token
     const Data = new Vente({
-        userId: userId, // Saving user ID with the annonce
         vehicule: req.body.vehicule,
         immat: req.body.immat,
         serie: req.body.serie,
