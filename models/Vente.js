@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 
 const venteSchema = mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     vehicule: { type: String, required: true },
     immat: { type: String, required: true, unique: true },
     serie: { type: String, required: true, unique: true },
