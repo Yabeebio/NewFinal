@@ -257,11 +257,10 @@ app.get('/api/annonces', validateToken, (req, res) => {
             res.json(annonces);
         })
         .catch((error) => {
-            console.error('Error retrieving user annonces:', error);
-            res.status(500).json({ error: 'Internal Server Error' });
+            console.error('Erreur lors de la récupération des annonces de l\'utilisateur :', error);
+            res.status(500).json({ error: 'Erreur interne du serveur' });
         });
 });
-
 
 // RECUPERER UNE SEULE ANNONCE SELON L'ID
 
