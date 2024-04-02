@@ -248,8 +248,8 @@ app.get('/allsales', function (req, res) {
 // HISTORIQUE DES ANNONCES DE L'UTILISATEUR
 
 app.get('/api/annonces', validateToken, (req, res) => {
-    const userId = req.user.id;
-    Vente.find({ userId: userId })
+    const userId = req.user.id; // Récupérer l'ID de l'utilisateur à partir du jeton
+    Vente.find({ userId: userId }) // Utiliser l'ID de l'utilisateur pour récupérer les annonces
         .then((annonces) => {
             res.json(annonces);
         })
