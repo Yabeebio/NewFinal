@@ -212,7 +212,10 @@ app.post('/addSales', upload.array('images', 50), function (req, res) {
             });
     });
 
+    const userId = req.user.id; // Récupérer l'ID de l'utilisateur à partir du token
+
     const Data = new Vente({
+        userId: userId, // Ajouter l'ID de l'utilisateur à l'annonce
         vehicule: req.body.vehicule,
         immat: req.body.immat,
         serie: req.body.serie,
@@ -248,7 +251,7 @@ app.get('/allsales', function (req, res) {
 // HISTORIQUE DES ANNONCES DE L'UTILISATEUR
 
 app.get('/api/annonces', validateToken, (req, res) => {
-    const userId = req.user.id; // Récupérer l'ID de l'utilisateur à partir du jeton
+    const userId = req.user.id; // Récupérer l'ID de l'utilisateur à partir du token
     Vente.find({ userId: userId }) // Utiliser l'ID de l'utilisateur pour récupérer les annonces
         .then((annonces) => {
             res.json(annonces);
