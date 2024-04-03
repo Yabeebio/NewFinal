@@ -52,7 +52,7 @@ const validateToken = (req, res, next) => {
         }
     }
     catch (error) {
-        return res.status(400).json({ error: error});
+        return res.status(400).json({ error: "Invalid token: " + error.message });
     }
 };
 

@@ -385,7 +385,20 @@ app.get('/getJwt', validateToken, (req, res) => {
     console.log('Requête vers /getJwt reçue');
     res.header('Access-Control-Allow-Origin', 'https://frontend-final-five.vercel.app');
     res.header('Access-Control-Allow-Credentials', true); // Ajout de cet en-tête
-    res.json(jwtDecode(req.cookies['access_token']));
+
+    // Récupérer l'ID de l'utilisateur à partir du token décodé
+    const userId = req.user.id;
+
+    // Utilisez l'ID de l'utilisateur pour rechercher les annonces associées
+    Vente.find({ userId: userId })
+        .then((annonces) => {
+            // Renvoyer les annonces associées à l'utilisateur en tant que réponse
+            res.json(annonces);
+        })
+        .catch((error) => {
+            console.error('Error retrieving user annonces:', error);
+            res.status(500).json({ error: 'Internal Server Error' });
+        });
 });
 
 var server = app.listen(5000, function () {
