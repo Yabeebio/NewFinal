@@ -216,12 +216,15 @@ app.delete('/deleteuser/:id', (req, res) => {
 
 const sharp = require('sharp');
 
-app.post('/addSales', upload.array('images', 50), function (req, res) {
+app.post('/addSales', upload.array('images', 50), validateToken, function (req, res) {
     if (!req.files || !req.files.length === 0) {
         return res.status(400).json({ message: "No files uploaded" });
     }
 
     const images = req.files.map(file => file.originalname);
+
+    // Récupérer l'ID de l'utilisateur à partir du token décodé
+    const userId = req.user.id;
 
     req.files.forEach(file => {
         sharp(file.path)
@@ -236,6 +239,7 @@ app.post('/addSales', upload.array('images', 50), function (req, res) {
     });
 
     const Data = new Vente({
+        userId: userId, // Associez l'ID de l'utilisateur à l'annonce
         vehicule: req.body.vehicule,
         immat: req.body.immat,
         serie: req.body.serie,
