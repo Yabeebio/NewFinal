@@ -1,10 +1,6 @@
 const mongoose = require('mongoose');
 
 const venteSchema = mongoose.Schema({
-    userId: {
-        type: mongoose.Schema.Types.ObjectId, // Type ObjectId pour stocker l'ID de l'utilisateur
-        ref: 'User' // Référence à votre modèle User pour associer l'annonce à un utilisateur
-    },
     vehicule: { type: String, required: true },
     immat: { type: String, required: true, unique: true },
     serie: { type: String, required: true, unique: true },
@@ -17,6 +13,6 @@ const venteSchema = mongoose.Schema({
     description: { type: String },
     prix: { type: Number, required: true },
     images: { type: [String] },
-});
+})
 
 module.exports = mongoose.model('Vente', venteSchema);

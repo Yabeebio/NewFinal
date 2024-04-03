@@ -105,7 +105,7 @@ const User = require('./models/User');
 const Vente = require('./models/Vente');
 const Support = require('./models/Support');
 
-const jwtDecode = require('jwt-decode');
+const { jwtDecode } = require('jwt-decode');
 
 // INSCRIPTION
 
@@ -216,19 +216,12 @@ app.delete('/deleteuser/:id', (req, res) => {
 
 const sharp = require('sharp');
 
-app.post('/addSales', upload.array('images', 50), validateToken, function (req, res) {
-    console.log("Request received for adding sales:", req.body);
-
+app.post('/addSales', upload.array('images', 50), function (req, res) {
     if (!req.files || !req.files.length === 0) {
-        console.log("No files uploaded");
         return res.status(400).json({ message: "No files uploaded" });
     }
 
     const images = req.files.map(file => file.originalname);
-
-    // Récupérer l'ID de l'utilisateur à partir du token décodé
-    const userId = req.user.id;
-    console.log("User ID:", userId);
 
     req.files.forEach(file => {
         sharp(file.path)
@@ -243,7 +236,6 @@ app.post('/addSales', upload.array('images', 50), validateToken, function (req, 
     });
 
     const Data = new Vente({
-        userId: userId, // Associez l'ID de l'utilisateur à l'annonce
         vehicule: req.body.vehicule,
         immat: req.body.immat,
         serie: req.body.serie,
@@ -264,7 +256,7 @@ app.post('/addSales', upload.array('images', 50), validateToken, function (req, 
             res.json({ redirect: '/buy' });
         })
         .catch(error => {
-            console.error("Error saving car:", error);
+            console.error(error);
             res.status(500).json({ error: "Internal Server Error" })
         })
 });
@@ -394,31 +386,11 @@ app.get('/getJwt', validateToken, (req, res) => {
     res.header('Access-Control-Allow-Origin', 'https://frontend-final-five.vercel.app');
     res.header('Access-Control-Allow-Credentials', true); // Ajout de cet en-tête
 
-    // Récupérer l'ID de l'utilisateur à partir du token décodé
-    const userId = req.user.id;
+    // Utiliser la fonction jwtDecode pour décoder le jeton JWT
+    const decodedToken = jwtDecode(req.cookies['access_token']);
 
-    // Utiliser l'ID de l'utilisateur pour rechercher l'utilisateur correspondant dans la base de données
-    User.findById(userId)
-        .then((user) => {
-            if (!user) {
-                return res.status(404).json({ error: 'User not found' });
-            }
-            
-            // Utiliser l'ID de l'utilisateur pour rechercher les annonces associées à l'utilisateur
-            Vente.find({ userId: userId })
-                .then((annonces) => {
-                    // Renvoyer les annonces associées à l'utilisateur en tant que réponse
-                    res.json(annonces);
-                })
-                .catch((error) => {
-                    console.error('Error retrieving user annonces:', error);
-                    res.status(500).json({ error: 'Internal Server Error' });
-                });
-        })
-        .catch((error) => {
-            console.error('Error retrieving user:', error);
-            res.status(500).json({ error: 'Internal Server Error' });
-        });
+    // Renvoyer le jeton décodé en tant que réponse
+    res.json(decodedToken);
 });
 
 var server = app.listen(5000, function () {
