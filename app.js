@@ -76,6 +76,29 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+// EVITE LA POLUTION DES ENTETES HTTP
+
+const hpp = require('hpp');
+app.use(hpp());  
+
+// APPLIQUE LES ENTETES DE SECURITE RECOMMENDER PAR HELMET POUR EVITER LES INJECTIONS DANS L'ENTETE ET AUTRES
+
+const helmet = require('helmet');
+app.use(helmet());
+
+// NOCACHE EVITE QUE LES DONNEES SOIENT STOCKEES EN CACHE
+
+const nocache = require('nocache');
+app.use(nocache());
+
+// SWAGGER POUR LA DOCUMENTATION
+
+const swaggerUI = require('swagger-ui-express');
+const swaggerDocs = require('./swagger-output.json');
+
+console.log(swaggerDocs);
+
+app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerDocs));
 
 // MODELE SETUP
 const User = require('./models/User');
@@ -202,7 +225,7 @@ app.post('/addSales', upload.array('images', 50), function (req, res) {
 
     req.files.forEach(file => {
         sharp(file.path)
-            .resize({ width: 800, height: 600 }) // Spécifiez les dimensions souhaitées
+            .resize({ width: 800, height: 600 }) // dimensions que je veux pour le resize
             .toFile('uploads/resized_' + file.originalname, (err, info) => {
                 if (err) {
                     console.error("Error resizing image:", err);
