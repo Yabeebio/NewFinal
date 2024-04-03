@@ -96,7 +96,7 @@ app.use(nocache());
 const swaggerUI = require('swagger-ui-express');
 const swaggerDocs = require('./swagger-output.json');
 
-console.log(swaggerDocs);
+/* console.log(swaggerDocs); */
 
 app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerDocs));
 
@@ -217,7 +217,10 @@ app.delete('/deleteuser/:id', (req, res) => {
 const sharp = require('sharp');
 
 app.post('/addSales', upload.array('images', 50), validateToken, function (req, res) {
+    console.log("Request received for adding sales:", req.body);
+
     if (!req.files || !req.files.length === 0) {
+        console.log("No files uploaded");
         return res.status(400).json({ message: "No files uploaded" });
     }
 
@@ -225,6 +228,7 @@ app.post('/addSales', upload.array('images', 50), validateToken, function (req, 
 
     // Récupérer l'ID de l'utilisateur à partir du token décodé
     const userId = req.user.id;
+    console.log("User ID:", userId);
 
     req.files.forEach(file => {
         sharp(file.path)
@@ -260,7 +264,7 @@ app.post('/addSales', upload.array('images', 50), validateToken, function (req, 
             res.json({ redirect: '/buy' });
         })
         .catch(error => {
-            console.error(error);
+            console.error("Error saving car:", error);
             res.status(500).json({ error: "Internal Server Error" })
         })
 });
