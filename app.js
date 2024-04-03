@@ -393,14 +393,26 @@ app.get('/getJwt', validateToken, (req, res) => {
     // Récupérer l'ID de l'utilisateur à partir du token décodé
     const userId = req.user.id;
 
-    // Utilisez l'ID de l'utilisateur pour rechercher les annonces associées
-    Vente.find({ userId: userId })
-        .then((annonces) => {
-            // Renvoyer les annonces associées à l'utilisateur en tant que réponse
-            res.json(annonces);
+    // Utiliser l'ID de l'utilisateur pour rechercher l'utilisateur correspondant dans la base de données
+    User.findById(userId)
+        .then((user) => {
+            if (!user) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+            
+            // Utiliser l'ID de l'utilisateur pour rechercher les annonces associées à l'utilisateur
+            Vente.find({ userId: userId })
+                .then((annonces) => {
+                    // Renvoyer les annonces associées à l'utilisateur en tant que réponse
+                    res.json(annonces);
+                })
+                .catch((error) => {
+                    console.error('Error retrieving user annonces:', error);
+                    res.status(500).json({ error: 'Internal Server Error' });
+                });
         })
         .catch((error) => {
-            console.error('Error retrieving user annonces:', error);
+            console.error('Error retrieving user:', error);
             res.status(500).json({ error: 'Internal Server Error' });
         });
 });
