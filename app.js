@@ -105,7 +105,7 @@ const User = require('./models/User');
 const Vente = require('./models/Vente');
 const Support = require('./models/Support');
 
-const { jwtDecode } = require('jwt-decode');
+const jwtDecode = require('jwt-decode');
 
 // INSCRIPTION
 
