@@ -382,11 +382,24 @@ app.get('/allusers', function (req, res) {
 
 // DELETE USER BY ADMIN
 
-app.delete('/deletethisuser/:id', (req, res) => {
-    User.findOneAndDelete({ _id: req.params.id })
+app.options('/deletesale/:id', (req, res) => {
+    // Répondre aux pré-vérifications CORS avec les bonnes informations
+    res.header('Access-Control-Allow-Origin', 'https://frontend-final-five.vercel.app');
+    res.header('Access-Control-Allow-Methods', 'DELETE');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.status(200).end();
+});
+
+app.delete('/deletesale/:id', (req, res) => {
+    // Vérifier si l'utilisateur est administrateur
+    if (!req.user.admin) {
+        return res.status(403).json({ error: "Unauthorized" }); // 403 Forbidden si l'utilisateur n'est pas administrateur
+    }
+
+    Vente.findOneAndDelete({ _id: req.params.id })
         .then(() => {
-            console.log("This user has been deleted successfully");
-            res.redirect("https://frontend-final-five.vercel.app/panelcontrol");
+            console.log("Sale deleted successfully");
+            res.status(204).send(); // 204 No Content si la suppression réussit
         })
         .catch((error) => {
             console.log(error);
