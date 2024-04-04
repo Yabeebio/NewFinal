@@ -301,6 +301,25 @@ app.get('/sale/:id', function (req, res) {
         });
 });
 
+// ADMIN SUPPRIME LES ANNONCES
+
+app.delete('/deletesale/:id', (req, res) => {
+    // Vérifier si l'utilisateur est administrateur
+    if (!req.user.admin) {
+        return res.status(403).json({ error: "Unauthorized" }); // 403 Forbidden si l'utilisateur n'est pas administrateur
+    }
+
+    Vente.findOneAndDelete({ _id: req.params.id })
+        .then(() => {
+            console.log("Sale deleted successfully");
+            res.status(204).send(); // 204 No Content si la suppression réussit
+        })
+        .catch((error) => {
+            console.log(error);
+            res.status(500).json({ error: "Internal Server Error" });
+        });
+});
+
 // RECHERCHE VEHICULE
 
 app.get('/api/search', async (req, res) => {
